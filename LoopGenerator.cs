@@ -11,7 +11,6 @@ namespace CrawfisSoftware.PCG.Loops
 {
     public class LoopGenerator : MazeBuilderAbstract<int,int>
     {
-        private int width, height;
         int[] rowValues;
         int[] newRowValues;
         int currentNumberOfComponents = 0;
