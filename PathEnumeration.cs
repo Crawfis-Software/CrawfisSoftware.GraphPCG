@@ -20,7 +20,7 @@ namespace CrawfisSoftware.PCG
         {
             throw new NotImplementedException();
         }
-        private IEnumerable<int> FindSpans(int width, int inBitLocation)
+        public static IEnumerable<int> FindSpans(int width, int inBitLocation)
         {
             if (width == 1)
                 yield return 1;
@@ -40,17 +40,49 @@ namespace CrawfisSoftware.PCG
 
         }
 
-        private IEnumerable<int> SplitEven1Even(int width, int inBitLocation)
+        private static IEnumerable<int> SplitEven1Even(int width, int inBitLocation)
         {
-            throw new NotImplementedException();
+            foreach (int evenPattern in BitEnumerators.AllEven(inBitLocation))
+            {
+                int evenPatternShifted = evenPattern << (width - inBitLocation);
+                evenPatternShifted += 1 << (width - inBitLocation-1);
+                foreach (int oddPattern in BitEnumerators.AllEven(width - inBitLocation - 1))
+                {
+                    int pattern = evenPatternShifted + oddPattern;
+                    yield return pattern;
+                }
+            }
         }
 
-        private IEnumerable<int> SplitEven0Odd(int width, int inBitLocation)
+        private static IEnumerable<int> SplitEven0Odd(int width, int inBitLocation)
         {
-            throw new NotImplementedException();
+            // If inBitLocation is the last bit, then nothing should be returned
+            // as an odd number of bits is not possible after this location.
+            if (inBitLocation <= (width - 1))
+            {
+                if (inBitLocation == 0)
+                {
+                    foreach (int pattern in BitEnumerators.AllOdd(width - 1))
+                    {
+                        yield return pattern;
+                    }
+                }
+                else
+                {
+                    foreach (int evenPattern in BitEnumerators.AllEven(inBitLocation))
+                    {
+                        int evenPatternShifted = evenPattern << (width - inBitLocation);
+                        foreach (int oddPattern in BitEnumerators.AllOdd(width - inBitLocation - 1))
+                        {
+                            int pattern = evenPatternShifted + oddPattern;
+                            yield return pattern;
+                        }
+                    }
+                }
+            }
         }
 
-        private IEnumerable<int> SplitOdd0Even(int width, int inBitLocation)
+        private static IEnumerable<int> SplitOdd0Even(int width, int inBitLocation)
         {
             // If inBitLocation is the first bit, then nothing should be returned
             // as an odd number of bits is not possible before this location.
@@ -67,7 +99,7 @@ namespace CrawfisSoftware.PCG
                 {
                     foreach (int oddPattern in BitEnumerators.AllOdd(inBitLocation))
                     {
-                        int oddPatternShifted = oddPattern << inBitLocation; 
+                        int oddPatternShifted = oddPattern << (width - inBitLocation); 
                         foreach (int evenPattern in BitEnumerators.AllEven(width - inBitLocation - 1))
                         {
                             int pattern = oddPatternShifted + evenPattern;
