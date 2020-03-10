@@ -58,17 +58,17 @@ namespace CrawfisSoftware.PCG
             {
                 if (inBitLocation == width - 1)
                 {
-                    foreach (int pattern in AllEven(width - 1))
+                    foreach (int pattern in BitEnumerators.AllEven(width - 1))
                     {
                         yield return pattern << 1;
                     }
                 }
                 else
                 {
-                    foreach (int oddPattern in AllOdd(inBitLocation))
+                    foreach (int oddPattern in BitEnumerators.AllOdd(inBitLocation))
                     {
                         int oddPatternShifted = oddPattern << inBitLocation; 
-                        foreach (int evenPattern in AllEven(width - inBitLocation - 1))
+                        foreach (int evenPattern in BitEnumerators.AllEven(width - inBitLocation - 1))
                         {
                             int pattern = oddPatternShifted + evenPattern;
                             yield return pattern;
@@ -76,24 +76,6 @@ namespace CrawfisSoftware.PCG
                     }
                 }
             }
-        }
-
-        private IEnumerable<int> AllOdd(int inBitLocation)
-        {
-            throw new NotImplementedException();
-        }
-        // Tables store values with an odd or even number of bits. Entry zero is ignored.
-        private int[][] oddTables = new int[][] { new int[] { 0 }, new int[] { 1 }, new int[] { 1, 2 }, new int[] { 1, 2, 4, 7 } };
-        private int[][] evenTables = new int[][] { new int[] { 0 }, new int[] { 0 }, new int[] { 0, 3 }, new int[] { 0, 3, 5, 6 } };
-        private const int maxTableSize = 4;
-        private IEnumerable<int> AllEven(int width)
-        {
-            if(width < maxTableSize)
-            {
-                // return table values;
-                return evenTables[width];
-            }
-
         }
 
         private static int NodeValues(int i, int j)

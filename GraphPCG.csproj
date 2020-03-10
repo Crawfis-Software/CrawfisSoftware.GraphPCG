@@ -42,6 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BitEnumerators.cs" />
     <Compile Include="LoopGenerator.cs" />
     <Compile Include="PathEnumeration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
