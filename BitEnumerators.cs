@@ -11,7 +11,7 @@ namespace CrawfisSoftware.PCG
 
         // Tables store values with an odd or even number of bits. Entry zero is ignored.
         private static int[][] oddNumberOfBitsTable = new int[][] { null, new int[] { 1 }, new int[] { 1, 2 }, new int[] { 1, 2, 4, 7 } };
-        private static int[][] evenNumberOfBitsTable = new int[][] { null, new int[] { 0 }, new int[] { 0, 3 }, new int[] { 0, 3, 5, 6 } };
+        private static int[][] evenNumberOfBitsTable = new int[][] { new int[] { 0 }, new int[] { 0 }, new int[] { 0, 3 }, new int[] { 0, 3, 5, 6 } };
         private static int tableSize = 4;
         public static IEnumerable<int> AllEven(int width)
         {

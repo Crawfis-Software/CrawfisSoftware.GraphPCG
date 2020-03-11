@@ -18,12 +18,103 @@ namespace CrawfisSoftware.PCG
 
         public override void CreateMaze(bool preserveExistingCells)
         {
-            throw new NotImplementedException();
+            // Path Generation can be thought of as three sections. This algorithm will sweep
+            // up the grid, row by row. For faster performance, rotate your grid such that the
+            // width of the row is smaller than the height of the overall grid or maze.
+            // Assume start is on a lower row than end.
+            //    Section 1: Find all loops from 0 until start -> an even number of in-flows.
+            //    Section 2: Find all partial paths from start through end -> odd number of in-flows
+            //    Section 3: Find all loops from end+1 until height.
+            // Create first row
+            // Sweep up adding new rows of loops until Path start
+            // Make sure path start is not encased in a component.
+            // Sweep up adding new rows of paths until Path end.
+            // Make sure components allow start and end to be connected.
+            // Sweep up adding new rows of loops until last row.
+            // Make sure last row is valid and components can be connected w/o intersections.
+            // (optional) Make sure path or loop touches the ends of the rows (0 and width-1).
+            // While sweeping
+            //    Handle connected components and reject enumerations that from disconnected closed loops.
+            //    
+        }
+        public static IEnumerable<int> FindMatchingRows(int width, IList<int> inFlows)
+        {
+            // This method will ensure each inFlow has an out flow. 
+            // Additional new outFlow pairs are also permissible.
+            //int spanStart = 0;
+            //int spanEnd = (inFlows.Count > 1) ? inFlows[1] : width-1;
+            //int spanWidth = spanStart - spanEnd + 1;
+            //int inBitLocation = inFlows[0] - spanStart;
+            //int row = 0;
+            //var spans = new List<IEnumerable<int>>(inFlows.Count);
+            //foreach (int span in FindSpans(spanWidth,inBitLocation))
+            //{
+            //    row |= span << (width - spanEnd);
+            //}
+            //yield return row;
+            int currentIndex = 0;
+            var enumerator = MergeSpans(width, 0, currentIndex, inFlows).GetEnumerator();
+            var stack = new Stack<IEnumerator<int>>();
+            var indexStack = new Stack<int>();
+            while (true)
+            {
+                if (enumerator.MoveNext())
+                {
+                    int currentRow = enumerator.Current;
+                    if (currentIndex == inFlows.Count - 1)
+                    {
+                        yield return currentRow;
+                    }
+                    else
+                    {
+                        stack.Push(enumerator);
+                        indexStack.Push(currentIndex);
+                        enumerator = MergeSpans(width, currentRow, ++currentIndex,inFlows).GetEnumerator();
+                    }
+                }
+                else if (stack.Count > 0)
+                {
+                    // Output row?
+                    enumerator.Dispose();
+                    enumerator = stack.Pop();
+                    currentIndex = indexStack.Pop();
+                }
+                else
+                {
+                    yield break;
+                }
+            }
+        }
+        private static IEnumerable<int> MergeSpans(int width, int currentRow, int currentInFlowIndex, IList<int> inFlows)
+        {
+            int spanStart = -1;
+            int tempRow = currentRow;
+            for(int i=0; i <= width; i++)
+            {
+                spanStart++;
+                if ((tempRow & 1) ==1) break;
+                tempRow = tempRow >> 1;
+            }
+            spanStart = width - spanStart;
+            int lastBitLoc = (currentInFlowIndex > 0) ? inFlows[currentInFlowIndex - 1]+1 : 0;
+            spanStart = (spanStart > lastBitLoc) ? spanStart : lastBitLoc;
+            int currentInFlow = inFlows[currentInFlowIndex];
+            int spanEnd = (inFlows.Count > (currentInFlowIndex+1)) ? inFlows[currentInFlowIndex + 1] : width;
+            int spanWidth = spanEnd - spanStart;
+            int shiftAmount = width - spanEnd;
+            int inBitLocation = currentInFlow - spanStart;
+            foreach(int pattern in FindSpans(spanWidth,inBitLocation))
+            {
+                yield return currentRow | (pattern << shiftAmount);
+            }
         }
         public static IEnumerable<int> FindSpans(int width, int inBitLocation)
         {
             if (width == 1)
+            {
                 yield return 1;
+                yield break;
+            }
 
             foreach (int pattern in SplitOdd0Even(width, inBitLocation))
             {
@@ -58,16 +149,16 @@ namespace CrawfisSoftware.PCG
         {
             // If inBitLocation is the last bit, then nothing should be returned
             // as an odd number of bits is not possible after this location.
-            if (inBitLocation <= (width - 1))
+            if (inBitLocation < (width - 1))
             {
-                if (inBitLocation == 0)
-                {
-                    foreach (int pattern in BitEnumerators.AllOdd(width - 1))
-                    {
-                        yield return pattern;
-                    }
-                }
-                else
+                //if (inBitLocation == 0)
+                //{
+                //    foreach (int pattern in BitEnumerators.AllOdd(width - 1))
+                //    {
+                //        yield return pattern;
+                //    }
+                //}
+                //else
                 {
                     foreach (int evenPattern in BitEnumerators.AllEven(inBitLocation))
                     {
@@ -90,7 +181,7 @@ namespace CrawfisSoftware.PCG
             {
                 if (inBitLocation == width - 1)
                 {
-                    foreach (int pattern in BitEnumerators.AllEven(width - 1))
+                    foreach (int pattern in BitEnumerators.AllOdd(width - 1))
                     {
                         yield return pattern << 1;
                     }
