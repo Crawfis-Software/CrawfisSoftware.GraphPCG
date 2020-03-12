@@ -37,46 +37,98 @@ namespace CrawfisSoftware.PCG
             //    Handle connected components and reject enumerations that from disconnected closed loops.
             //    
         }
+        public static IEnumerable<int> FindRows(int width, IList<int> inFlows)
+        {
+            // Go through the list of inFlows and use the FindMatchingRows 
+            // for each subset of inFlows with possible components merged.
+            // This can be accomplished by looking at the set of all pairs and
+            // splitting it into those that start with even and those that start with odd.
+            // All possible selections of these sets are possible. Which implies
+            // all bit vectors of the size of the subsets.
+            int numberOfBits = inFlows.Count / 2;
+            int subsetSize = (1 << numberOfBits) - 1;
+            var inFlowSets = new List<IList<int>>();
+            inFlowSets.Add(inFlows);
+            for(int i = 0; i < subsetSize; i++)
+            {
+                var inFlowEvenSubset = new List<int>();
+                var inFlowOddSubset = new List<int>();
+                inFlowOddSubset.Add(0);
+                int bitPattern = i;
+                for(int bit=0; bit < numberOfBits; bit++)
+                {
+                    if((bitPattern&1) == 1)
+                    {
+                        inFlowEvenSubset.Add(2 * bit);
+                        inFlowEvenSubset.Add(2 * bit + 1);
+                        inFlowOddSubset.Add(2 * bit + 1);
+                        inFlowOddSubset.Add(2 * bit + 2);
+                    }
+                    bitPattern >>= 1;
+                }
+                inFlowEvenSubset.Add(inFlows.Count - 1);
+                inFlowSets.Add(inFlowEvenSubset);
+                inFlowSets.Add(inFlowOddSubset);
+            }
+            var validSets = new List<IList<int>>(inFlowSets.Count);
+            // Todo; Validate each set. If valid, add it to a new set.
+            // A set is invalid if it merges (closes a loop) on two inflows
+            // with the same component.
+            // Todo: For each set we need a mask to prevent new iterations from
+            // adding a horizontal link past a newly closed loop.
+            foreach (var set in inFlowSets)
+            {
+                //if()
+                {
+                    validSets.Add(set);
+                }
+            }
+            foreach(var newInFlow in validSets)
+            {
+                int mask = (1 << width) - 1;
+                // mask sould be computed setting to zero all bits from deleted inFlows.
+                foreach (int row in FindMatchingRows(width,newInFlow))
+                {
+                    // Todo: Need to validate each row with a mask or something.
+                    // Or this needs to be placed within FindMatchingRows.
+                    // Need to probably return the componenents with each row as well.
+                    if((row&mask) == row)
+                        yield return row;
+                }
+            }
+        }
         public static IEnumerable<int> FindMatchingRows(int width, IList<int> inFlows)
         {
             // This method will ensure each inFlow has an out flow. 
             // Additional new outFlow pairs are also permissible.
-            //int spanStart = 0;
-            //int spanEnd = (inFlows.Count > 1) ? inFlows[1] : width-1;
-            //int spanWidth = spanStart - spanEnd + 1;
-            //int inBitLocation = inFlows[0] - spanStart;
-            //int row = 0;
-            //var spans = new List<IEnumerable<int>>(inFlows.Count);
-            //foreach (int span in FindSpans(spanWidth,inBitLocation))
-            //{
-            //    row |= span << (width - spanEnd);
-            //}
-            //yield return row;
+            // It is basically a depth-first tree traversal of the possible spans
+            // going from left-to-right (down the tree). Foreach first span there
+            // are a set of children associated with the set of second spans, for each
+            // of these there is a set of children with the third span, etc.
             int currentIndex = 0;
-            var enumerator = MergeSpans(width, 0, currentIndex, inFlows).GetEnumerator();
+            var spanEnumerator = MergeSpans(width, 0, currentIndex, inFlows).GetEnumerator();
             var stack = new Stack<IEnumerator<int>>();
             var indexStack = new Stack<int>();
             while (true)
             {
-                if (enumerator.MoveNext())
+                if (spanEnumerator.MoveNext())
                 {
-                    int currentRow = enumerator.Current;
+                    int currentRow = spanEnumerator.Current;
                     if (currentIndex == inFlows.Count - 1)
                     {
                         yield return currentRow;
                     }
                     else
                     {
-                        stack.Push(enumerator);
+                        stack.Push(spanEnumerator);
                         indexStack.Push(currentIndex);
-                        enumerator = MergeSpans(width, currentRow, ++currentIndex,inFlows).GetEnumerator();
+                        spanEnumerator = MergeSpans(width, currentRow, ++currentIndex,inFlows).GetEnumerator();
                     }
                 }
                 else if (stack.Count > 0)
                 {
-                    // Output row?
-                    enumerator.Dispose();
-                    enumerator = stack.Pop();
+                    spanEnumerator.Dispose();
+                    spanEnumerator = stack.Pop();
                     currentIndex = indexStack.Pop();
                 }
                 else
