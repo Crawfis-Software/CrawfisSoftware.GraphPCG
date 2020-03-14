@@ -1,15 +1,11 @@
 ﻿using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Collections.Maze;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 
 namespace CrawfisSoftware.PCG.Loops
 {
-    public class LoopGenerator : MazeBuilderAbstract<int,int>
+    public class LoopGenerator : MazeBuilderAbstract<int, int>
     {
         int[] rowValues;
         int[] newRowValues;
@@ -30,7 +26,7 @@ namespace CrawfisSoftware.PCG.Loops
         {
             CreateBaseRow(this.RandomGenerator.Next(width / 50) + 1);
             currentNewComponentNumber = currentNumberOfComponents;
-            for(int row=1; row < height-1; row++)
+            for (int row = 1; row < height - 1; row++)
             {
                 currentRow++;
                 CreateNextRow(this.RandomGenerator.Next(width / 3));
@@ -52,7 +48,7 @@ namespace CrawfisSoftware.PCG.Loops
         {
             int start = spanEndPoints[0];
             int end = spanEndPoints[spanEndPoints.Count - 1];
-            for(int i = start; i < end; i++)
+            for (int i = start; i < end; i++)
             {
                 CarvePassage(i + currentRow * width, i + currentRow * width + 1);
             }
@@ -62,16 +58,16 @@ namespace CrawfisSoftware.PCG.Loops
         {
             int spanLength = width - 2 * numberOfSpans;
             int lastPoint = -1;
-            for(int i = 0; i < numberOfSpans*2; i++)
+            for (int i = 0; i < numberOfSpans * 2; i++)
             {
-                int nextPoint = this.RandomGenerator.Next(spanLength) + lastPoint+1;
+                int nextPoint = this.RandomGenerator.Next(spanLength) + lastPoint + 1;
                 spanEndPoints.Add(nextPoint);
                 lastPoint = nextPoint;
-                spanLength = width - lastPoint - (2*numberOfSpans-i-1);
+                spanLength = width - lastPoint - (2 * numberOfSpans - i - 1);
             }
             spanEndPoints.Sort();
             int component = 1;
-            for(int i = 0; i < spanEndPoints.Count; i+=2)
+            for (int i = 0; i < spanEndPoints.Count; i += 2)
             {
                 int start = spanEndPoints[i];
                 CarvePassage(start, start + width);
@@ -95,7 +91,7 @@ namespace CrawfisSoftware.PCG.Loops
             //    componentToTryToRemove = this.RandomGenerator.Next(currentNumberOfComponents) + 1;
             //}
             spanEndPoints.Add(width);
-            for (int i = 0; i < spanEndPoints.Count-1; i++)
+            for (int i = 0; i < spanEndPoints.Count - 1; i++)
             {
                 int start = spanEndPoints[i];
                 int next = spanEndPoints[i + 1];
@@ -116,10 +112,10 @@ namespace CrawfisSoftware.PCG.Loops
                 newSpanEndPoints.Add(newConnection);
                 int component = rowValues[start];
                 newRowValues[newConnection] = component;
-                CarvePassage(newConnection + currentRow*width, newConnection + width + currentRow * width);
-                if( newConnection > start )
+                CarvePassage(newConnection + currentRow * width, newConnection + width + currentRow * width);
+                if (newConnection > start)
                 {
-                    for(int cell=start; cell < newConnection; cell++)
+                    for (int cell = start; cell < newConnection; cell++)
                     {
                         CarvePassage(cell + currentRow * width, cell + 1 + currentRow * width);
                         newRowValues[cell] = component;
@@ -166,7 +162,7 @@ namespace CrawfisSoftware.PCG.Loops
         private int AddNewSpan(int start, int end)
         {
             int maxSpanLength = end - start;
-            if (maxSpanLength < 1) return start-1;
+            if (maxSpanLength < 1) return start - 1;
             int newSpanStart = this.RandomGenerator.Next(maxSpanLength - 1) + start;
             int newSpanEnd = this.RandomGenerator.Next(end - newSpanStart) + newSpanStart;
             if (newSpanEnd > newSpanStart)
@@ -185,7 +181,7 @@ namespace CrawfisSoftware.PCG.Loops
 
                 return newSpanEnd;
             }
-            return start-1;
+            return start - 1;
         }
 
         private static int NodeValues(int i, int j)

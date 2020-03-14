@@ -1,10 +1,6 @@
 ﻿using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Collections.Maze;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
 {
@@ -37,7 +33,7 @@ namespace CrawfisSoftware.PCG
             //    Handle connected components and reject enumerations that from disconnected closed loops.
             //    
         }
-        public static IEnumerable<int> FindRows(int width, IList<int> inFlows)
+        public static IEnumerable<int> FindRows(int width, IList<int> inFlows, IList<int> componentNumbers)
         {
             // Go through the list of inFlows and use the FindMatchingRows 
             // for each subset of inFlows with possible components merged.
@@ -49,33 +45,77 @@ namespace CrawfisSoftware.PCG
             int subsetSize = (1 << numberOfBits) - 1;
             var inFlowSets = new List<IList<int>>();
             inFlowSets.Add(inFlows);
-            for(int i = 0; i < subsetSize; i++)
+            var masks = new List<int>();
+            int initalMask = (1 << width) -1;
+            masks.Add(initalMask);
+            for (int i = 0; i < subsetSize; i++)
             {
                 var inFlowEvenSubset = new List<int>();
                 var inFlowOddSubset = new List<int>();
-                inFlowOddSubset.Add(0);
+                inFlowOddSubset.Add(inFlows[0]);
                 int bitPattern = i;
-                for(int bit=0; bit < numberOfBits; bit++)
+                var deletedFlows = new List<int>(inFlows.Count);
+                for (int bit = 0; bit < numberOfBits; bit++)
                 {
-                    if((bitPattern&1) == 1)
+                    // Todo: Rework to say deleted and then build the 2 lists.
+                    if ((bitPattern & 1) == 0)
                     {
-                        inFlowEvenSubset.Add(2 * bit);
-                        inFlowEvenSubset.Add(2 * bit + 1);
-                        inFlowOddSubset.Add(2 * bit + 1);
-                        inFlowOddSubset.Add(2 * bit + 2);
+                        deletedFlows.Add(2 * bit);
+                        //inFlowEvenSubset.Add(inFlows[2 * bit]);
+                        //inFlowEvenSubset.Add(inFlows[2 * bit + 1]);
+                        //inFlowOddSubset.Add(inFlows[2 * bit + 1]);
+                        //inFlowOddSubset.Add(inFlows[2 * bit + 2]);
                     }
                     bitPattern >>= 1;
                 }
-                inFlowEvenSubset.Add(inFlows.Count - 1);
-                inFlowSets.Add(inFlowEvenSubset);
-                inFlowSets.Add(inFlowOddSubset);
+                inFlowEvenSubset.Add(inFlows[inFlows.Count - 1]);
+                int maskEven = initalMask;
+                int maskOdd = initalMask;
+                //var deletedFlows = new List<int>(inFlows.Count);
+
+                bool validEven = true;
+                bool validOdd = true;
+                for (int j = 0; j < deletedFlows.Count; j+=2)
+                {
+                    if (componentNumbers[j] == componentNumbers[j + 1])
+                    {
+                        validEven = false;
+                    }
+
+                    if (componentNumbers[j + 1] == componentNumbers[j + 2])
+                    {
+                        validOdd = false;
+                    }
+                    int startMask = inFlows[deletedFlows[j]];
+                    int endMask = inFlows[deletedFlows[j]+1];
+                    int closedLoop = 1 << (endMask - startMask + 1);
+                    closedLoop = closedLoop - 1;
+                    closedLoop = closedLoop << (width - endMask - 1);
+                    maskEven &= ~closedLoop;
+                    startMask = inFlows[deletedFlows[j]+1];
+                    endMask = inFlows[deletedFlows[j]+ 2];
+                    closedLoop = 1 << (endMask - startMask + 1);
+                    closedLoop = closedLoop - 1;
+                    closedLoop = closedLoop << (width - endMask - 1);
+                    maskOdd &= ~closedLoop;
+                }
+                if (validEven)
+                {
+                    masks.Add(maskEven);
+                    inFlowSets.Add(inFlowEvenSubset);
+                }
+                if (validOdd)
+                {
+                    masks.Add(maskOdd);
+                    inFlowSets.Add(inFlowOddSubset);
+                }
             }
             var validSets = new List<IList<int>>(inFlowSets.Count);
             // Todo; Validate each set. If valid, add it to a new set.
             // A set is invalid if it merges (closes a loop) on two inflows
             // with the same component.
             // Todo: For each set we need a mask to prevent new iterations from
-            // adding a horizontal link past a newly closed loop.
+            // adding a horizontal link over the top of a newly closed loop.
             foreach (var set in inFlowSets)
             {
                 //if()
@@ -83,16 +123,18 @@ namespace CrawfisSoftware.PCG
                     validSets.Add(set);
                 }
             }
-            foreach(var newInFlow in validSets)
+            
+            for(int k = 0; k < validSets.Count; k++)
             {
-                int mask = (1 << width) - 1;
+                var newInFlow = validSets[k];
+                int mask = masks[k]; // (1 << width) - 1;
                 // mask sould be computed setting to zero all bits from deleted inFlows.
-                foreach (int row in FindMatchingRows(width,newInFlow))
+                foreach (int row in FindMatchingRows(width, newInFlow))
                 {
                     // Todo: Need to validate each row with a mask or something.
                     // Or this needs to be placed within FindMatchingRows.
                     // Need to probably return the componenents with each row as well.
-                    if((row&mask) == row)
+                    if ((row & mask) == row)
                         yield return row;
                 }
             }
@@ -122,7 +164,7 @@ namespace CrawfisSoftware.PCG
                     {
                         stack.Push(spanEnumerator);
                         indexStack.Push(currentIndex);
-                        spanEnumerator = MergeSpans(width, currentRow, ++currentIndex,inFlows).GetEnumerator();
+                        spanEnumerator = MergeSpans(width, currentRow, ++currentIndex, inFlows).GetEnumerator();
                     }
                 }
                 else if (stack.Count > 0)
@@ -141,21 +183,21 @@ namespace CrawfisSoftware.PCG
         {
             int spanStart = -1;
             int tempRow = currentRow;
-            for(int i=0; i <= width; i++)
+            for (int i = 0; i <= width; i++)
             {
                 spanStart++;
-                if ((tempRow & 1) ==1) break;
+                if ((tempRow & 1) == 1) break;
                 tempRow = tempRow >> 1;
             }
             spanStart = width - spanStart;
-            int lastBitLoc = (currentInFlowIndex > 0) ? inFlows[currentInFlowIndex - 1]+1 : 0;
+            int lastBitLoc = (currentInFlowIndex > 0) ? inFlows[currentInFlowIndex - 1] + 1 : 0;
             spanStart = (spanStart > lastBitLoc) ? spanStart : lastBitLoc;
             int currentInFlow = inFlows[currentInFlowIndex];
-            int spanEnd = (inFlows.Count > (currentInFlowIndex+1)) ? inFlows[currentInFlowIndex + 1] : width;
+            int spanEnd = (inFlows.Count > (currentInFlowIndex + 1)) ? inFlows[currentInFlowIndex + 1] : width;
             int spanWidth = spanEnd - spanStart;
             int shiftAmount = width - spanEnd;
             int inBitLocation = currentInFlow - spanStart;
-            foreach(int pattern in FindSpans(spanWidth,inBitLocation))
+            foreach (int pattern in FindSpans(spanWidth, inBitLocation))
             {
                 yield return currentRow | (pattern << shiftAmount);
             }
@@ -188,7 +230,7 @@ namespace CrawfisSoftware.PCG
             foreach (int evenPattern in BitEnumerators.AllEven(inBitLocation))
             {
                 int evenPatternShifted = evenPattern << (width - inBitLocation);
-                evenPatternShifted += 1 << (width - inBitLocation-1);
+                evenPatternShifted += 1 << (width - inBitLocation - 1);
                 foreach (int oddPattern in BitEnumerators.AllEven(width - inBitLocation - 1))
                 {
                     int pattern = evenPatternShifted + oddPattern;
@@ -242,7 +284,7 @@ namespace CrawfisSoftware.PCG
                 {
                     foreach (int oddPattern in BitEnumerators.AllOdd(inBitLocation))
                     {
-                        int oddPatternShifted = oddPattern << (width - inBitLocation); 
+                        int oddPatternShifted = oddPattern << (width - inBitLocation);
                         foreach (int evenPattern in BitEnumerators.AllEven(width - inBitLocation - 1))
                         {
                             int pattern = oddPatternShifted + evenPattern;
