@@ -33,6 +33,19 @@ namespace CrawfisSoftware.PCG
             //    Handle connected components and reject enumerations that from disconnected closed loops.
             //    
         }
+        private static List<int> InflowsFromBits(int width, int row)
+        {
+            var inFlows = new List<int>();
+            for(int i=0; i < width; i++)
+            {
+                int mask = 1 << (width - i-1);
+                if((row& mask) == mask)
+                {
+                    inFlows.Add(i);
+                }
+            }
+            return inFlows;
+        }
         public static IEnumerable<int> FindRows(int width, IList<int> inFlows, IList<int> componentNumbers)
         {
             // Go through the list of inFlows and use the FindMatchingRows 
@@ -41,6 +54,9 @@ namespace CrawfisSoftware.PCG
             // splitting it into those that start with even and those that start with odd.
             // All possible selections of these sets are possible. Which implies
             // all bit vectors of the size of the subsets.
+            //
+            // BUG: This logic is flawed. We need possible union of odd merged and even merged.
+            //
             int numberOfBits = inFlows.Count / 2;
             int subsetSize = (1 << numberOfBits) - 1;
             var inFlowSets = new List<IList<int>>();
@@ -50,6 +66,11 @@ namespace CrawfisSoftware.PCG
             masks.Add(initalMask);
             for (int i = 0; i < subsetSize; i++)
             {
+                var componentMapping = new Dictionary<int, int>();
+                foreach(int component in componentNumbers)
+                {
+                    componentMapping[component] = component;
+                }
                 var inFlowEvenSubset = new List<int>();
                 var inFlowOddSubset = new List<int>();
                 inFlowOddSubset.Add(inFlows[0]);
@@ -57,50 +78,75 @@ namespace CrawfisSoftware.PCG
                 var deletedFlows = new List<int>(inFlows.Count);
                 for (int bit = 0; bit < numberOfBits; bit++)
                 {
-                    // Todo: Rework to say deleted and then build the 2 lists.
                     if ((bitPattern & 1) == 0)
                     {
                         deletedFlows.Add(2 * bit);
-                        //inFlowEvenSubset.Add(inFlows[2 * bit]);
-                        //inFlowEvenSubset.Add(inFlows[2 * bit + 1]);
-                        //inFlowOddSubset.Add(inFlows[2 * bit + 1]);
-                        //inFlowOddSubset.Add(inFlows[2 * bit + 2]);
+                    }
+                    else
+                    {
+                        inFlowEvenSubset.Add(inFlows[2 * bit]);
+                        inFlowEvenSubset.Add(inFlows[2 * bit + 1]);
+                        inFlowOddSubset.Add(inFlows[2 * bit + 1]);
+                        inFlowOddSubset.Add(inFlows[2 * bit + 2]);
                     }
                     bitPattern >>= 1;
                 }
                 inFlowEvenSubset.Add(inFlows[inFlows.Count - 1]);
                 int maskEven = initalMask;
                 int maskOdd = initalMask;
-                //var deletedFlows = new List<int>(inFlows.Count);
 
+                Dictionary<int, int> deletedComponents = new Dictionary<int,int>();
+                var newComponentsEven = new List<int>();
+                var newComponentsOff = new List<int>();
                 bool validEven = true;
                 bool validOdd = true;
                 for (int j = 0; j < deletedFlows.Count; j+=2)
                 {
-                    if (componentNumbers[j] == componentNumbers[j + 1])
+                    int componentNum1 = componentMapping[componentNumbers[deletedFlows[j]]];
+                    int componentNum2 = componentMapping[componentNumbers[deletedFlows[j] + 1]];
+                    int componentNum3 = componentMapping[componentNumbers[deletedFlows[j] + 2]];
+                    if (componentNum1 == componentNum2)
                     {
                         validEven = false;
                     }
+                    else
+                    {
+                        int startMask = inFlows[deletedFlows[j]];
+                        int endMask = inFlows[deletedFlows[j] + 1];
+                        int closedLoop = 1 << (endMask - startMask + 1);
+                        closedLoop = closedLoop - 1;
+                        closedLoop = closedLoop << (width - endMask - 1);
+                        maskEven &= ~closedLoop;
 
-                    if (componentNumbers[j + 1] == componentNumbers[j + 2])
+                        int minComponentNum = componentNum1 < componentNum2 ? componentNum1 : componentNum2;
+                        componentMapping[componentNum1] = minComponentNum;
+                        componentMapping[componentNum2] = minComponentNum;
+                        //deletedComponents[componentNumbers[j]] = componentNumbers[j+1];
+                    }
+
+                    if (componentNum2 == componentNum3)
                     {
                         validOdd = false;
                     }
-                    int startMask = inFlows[deletedFlows[j]];
-                    int endMask = inFlows[deletedFlows[j]+1];
-                    int closedLoop = 1 << (endMask - startMask + 1);
-                    closedLoop = closedLoop - 1;
-                    closedLoop = closedLoop << (width - endMask - 1);
-                    maskEven &= ~closedLoop;
-                    startMask = inFlows[deletedFlows[j]+1];
-                    endMask = inFlows[deletedFlows[j]+ 2];
-                    closedLoop = 1 << (endMask - startMask + 1);
-                    closedLoop = closedLoop - 1;
-                    closedLoop = closedLoop << (width - endMask - 1);
-                    maskOdd &= ~closedLoop;
+                    else
+                    {
+                        int startMask = inFlows[deletedFlows[j] + 1];
+                        int endMask = inFlows[deletedFlows[j] + 2];
+                        int closedLoop = 1 << (endMask - startMask + 1);
+                        closedLoop = closedLoop - 1;
+                        closedLoop = closedLoop << (width - endMask - 1);
+                        maskOdd &= ~closedLoop;
+                        int minComponentNum = componentNum2 < componentNum3 ? componentNum2 : componentNum3;
+                        componentMapping[componentNum2] = minComponentNum;
+                        componentMapping[componentNum3] = minComponentNum;
+                    }
                 }
                 if (validEven)
                 {
+                    for(int l=0; l < deletedComponents.Count; l++)
+                    {
+                        // Todo: delete the component and relabel.
+                    }
                     masks.Add(maskEven);
                     inFlowSets.Add(inFlowEvenSubset);
                 }
@@ -110,32 +156,22 @@ namespace CrawfisSoftware.PCG
                     inFlowSets.Add(inFlowOddSubset);
                 }
             }
-            var validSets = new List<IList<int>>(inFlowSets.Count);
-            // Todo; Validate each set. If valid, add it to a new set.
-            // A set is invalid if it merges (closes a loop) on two inflows
-            // with the same component.
-            // Todo: For each set we need a mask to prevent new iterations from
-            // adding a horizontal link over the top of a newly closed loop.
-            foreach (var set in inFlowSets)
-            {
-                //if()
-                {
-                    validSets.Add(set);
-                }
-            }
+
             
-            for(int k = 0; k < validSets.Count; k++)
+            for(int k = 0; k < inFlowSets.Count; k++)
             {
-                var newInFlow = validSets[k];
+                var newInFlow = inFlowSets[k];
                 int mask = masks[k]; // (1 << width) - 1;
                 // mask sould be computed setting to zero all bits from deleted inFlows.
                 foreach (int row in FindMatchingRows(width, newInFlow))
                 {
-                    // Todo: Need to validate each row with a mask or something.
-                    // Or this needs to be placed within FindMatchingRows.
                     // Need to probably return the componenents with each row as well.
+                    // Would be best to return the outFlows and new component numbers.
                     if ((row & mask) == row)
+                    {
+                        var outFlows = InflowsFromBits(width, row);
                         yield return row;
+                    }
                 }
             }
         }
