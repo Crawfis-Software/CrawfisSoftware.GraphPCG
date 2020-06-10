@@ -30,7 +30,7 @@ namespace CrawfisSoftware.PCG
             // Make sure last row is valid and components can be connected w/o intersections.
             // (optional) Make sure path or loop touches the ends of the rows (0 and width-1).
             // While sweeping
-            //    Handle connected components and reject enumerations that from disconnected closed loops.
+            //    Handle connected components and reject enumerations that form disconnected closed loops.
             //    
         }
         private static List<int> InflowsFromBits(int width, int row)
