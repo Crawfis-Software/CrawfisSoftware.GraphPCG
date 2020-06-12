@@ -9,13 +9,50 @@ namespace CrawfisSoftware.PCG
     {
         public static IEnumerable<int> ValidRows(int width, List<int> positions, List<OutflowState> possibleOutflowStates)
         {
-            var outflowState = new List<OutflowState>(possibleOutflowStates.Count);
-            // Todo: Enumerate set of valid states.
-            // Todo: check case where R->L and width == 2.
-            // Another set cancat problem {a,b,c,d} U {e,f} -> ae, af, be, bf, ... de. 
-            return ValidRowsFixedFlowStates(width, positions, outflowState);
+            // Another set cross product problem {a,b,c,d} U {e,f} -> ae, af, be, bf, ... de. 
+            // Note, this is NP as well O(4^N), where N is the number of inflows < 31
+            var stateSets = new List<IEnumerable<OutflowState>>(possibleOutflowStates.Count);
+            foreach(var flags in possibleOutflowStates)
+            {
+                var enumValues = EnumerableExtensions.EnumFlagSubsets<OutflowState>(flags);
+                stateSets.Add(enumValues);
+            }
+            var crossProduct = EnumerableExtensions.CartesianProduct<OutflowState>(stateSets);
+            foreach (var outflowState in crossProduct)
+            {
+                if (CheckForValidRightLeftCombo(positions, outflowState))
+                {
+                    foreach (int row in ValidRowsFixedFlowStates(width, positions, outflowState))
+                    {
+                        yield return row;
+                    }
+                }
+            }
+            yield break;
         }
-        public static IEnumerable<int> ValidRowsFixedFlowStates(int width, List<int> positions, List<OutflowState> desiredOutflowState)
+
+        private static bool CheckForValidRightLeftCombo(List<int> positions, IEnumerable<OutflowState> outflowState)
+        {
+            // Check case where R->L and width == 2. Not enough room for both.
+            int index = 0;
+            var lastState = OutflowState.Up;
+            int lastPosition = -3;
+            foreach(var state in outflowState)
+            {
+                if((positions[index] - lastPosition) == 2)
+                {
+                    if ((lastState & OutflowState.Right) == OutflowState.Right &&
+                        (state & OutflowState.Left) == OutflowState.Left)
+                        return false;
+                }
+                lastState = state;
+                lastPosition = positions[index];
+                index++;
+            }
+            return true;
+        }
+
+        public static IEnumerable<int> ValidRowsFixedFlowStates(int width, List<int> positions, IEnumerable<OutflowState> desiredOutflowState)
         {
             // This is basically a depth-first tree traversal of the possible spans
             // going from left-to-right (down the tree). Foreach first span there
@@ -24,18 +61,18 @@ namespace CrawfisSoftware.PCG
             var inFlows = new List<int>(positions.Count + 1);
             foreach (int pos in positions)
                 inFlows.Add(pos);
-            var flowStates = new List<OutflowState>(desiredOutflowState.Count + 1);
+            var flowStates = new List<OutflowState>(positions.Count + 1);
             foreach (var state in desiredOutflowState)
                 flowStates.Add(state);
             if (positions[positions.Count - 1] != width-1)
             {
                 inFlows.Add(width);
-                flowStates.Add(OutflowState.Dead);
+                flowStates.Add(OutflowState.DeadLeft);
             }
             width++;
             //int mask = (2 << (width-1)) -1;
             int currentIndex = 0;
-            var spanEnumerator = SpanCombiner(width, 0, 0, OutflowState.Dead, inFlows[0], flowStates[0]).GetEnumerator();
+            var spanEnumerator = SpanCombiner(width, 0, 0, OutflowState.DeadRight, inFlows[0], flowStates[0]).GetEnumerator();
             var stack = new Stack<IEnumerator<int>>();
             var indexStack = new Stack<int>();
             var shiftStack = new Stack<int>();
@@ -76,10 +113,6 @@ namespace CrawfisSoftware.PCG
             int shiftAmount = width - end - 1;
             foreach(int spanPattern in new SpanEnumeration(0, startState, end-start, endState))
             {
-                //Console.WriteLine();
-                //Console.WriteLine(Convert.ToString(spanPattern, 2).PadLeft(10, '0'));
-                //Console.WriteLine(Convert.ToString((spanPattern << shiftAmount), 2).PadLeft(10, '0'));
-                //Console.WriteLine(Convert.ToString((spanPattern << shiftAmount) | rowPattern, 2).PadLeft(10, '0'));
                 yield return (spanPattern << shiftAmount) | rowPattern;
             }
         }

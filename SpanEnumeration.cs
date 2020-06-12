@@ -32,9 +32,16 @@ namespace CrawfisSoftware.PCG
                     yield return 0;
                 yield break;
             }
+            if((startStates & OutflowState.DeadLeft) == OutflowState.DeadLeft &&
+                (endStates & OutflowState.DeadRight) == OutflowState.DeadRight) // clause not really needed.
+            {
+                yield return 0;
+                yield break;
+            }    
             bool startGoesLeftUpOrIsDead = (startStates & OutflowState.Left) == OutflowState.Left
                 || (startStates & OutflowState.Up) == OutflowState.Up
-                || (startStates & OutflowState.Dead) == OutflowState.Dead;
+                || (startStates & OutflowState.DeadLeft) == OutflowState.DeadLeft
+                || (startStates & OutflowState.DeadRight) == OutflowState.DeadRight;
             bool startGoesRight = (startStates & OutflowState.Right) == OutflowState.Right;
             // There are 6 cases, but L-L and R-(R|D) are the same - Odd0.
             if (startGoesLeftUpOrIsDead)
@@ -56,7 +63,7 @@ namespace CrawfisSoftware.PCG
                     }
                 }
                 if ((endStates & OutflowState.Right) == OutflowState.Right 
-                    || (endStates & OutflowState.Dead) == OutflowState.Dead)
+                    || (endStates & OutflowState.DeadLeft) == OutflowState.DeadLeft)
                 {
                     // All Even + 0;
                     foreach (int evenPattern in BitEnumerators.AllEven(width))
@@ -87,7 +94,7 @@ namespace CrawfisSoftware.PCG
                     }
                 }
                 if ((endStates & OutflowState.Right) == OutflowState.Right
-                    || (endStates & OutflowState.Dead) == OutflowState.Dead)
+                    || (endStates & OutflowState.DeadLeft) == OutflowState.DeadLeft)
                 {
                     // All Odd + 0;
                     foreach (int oddPattern in BitEnumerators.AllOdd(width))

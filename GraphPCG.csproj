@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BitEnumerators.cs" />
+    <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="LoopGenerator.cs" />
     <Compile Include="MergeLoops.cs" />
     <Compile Include="OutflowStates.cs" />

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace CrawfisSoftware.PCG
 {
     [Flags]
-    public enum OutflowState { Left = 1, Right = 2, Up = 4, Dead = 8 };
+    public enum OutflowState { Left = 1, Right = 2, Up = 4, DeadLeft = 8, DeadRight = 16 };
 
     internal class OutflowStates
     {
@@ -32,7 +32,9 @@ namespace CrawfisSoftware.PCG
                 if (positions[i] + 1 == positions[i + 1])
                     validStates &= ~OutflowState.Right;
                 if (components[i] == -1)
-                    validStates = OutflowState.Dead;
+                    validStates = OutflowState.DeadLeft;
+                if (components[i] == -2)
+                    validStates = OutflowState.DeadRight;
                 outflowStates.Add(validStates);
                 initialPosition = positions[i];
             }

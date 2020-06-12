@@ -15,12 +15,12 @@ namespace CrawfisSoftware.PCG
                 List<int> newComponents = new List<int>(components);
                 int ci = components[i];
                 int ciPlus1 = components[i+1];
-                if ((ci != -1) && (ciPlus1 != -1) && (ci != ciPlus1))
+                if ((ci >= 0) && (ciPlus1 >= 0) && (ci != ciPlus1))
                 {
                     int min = ci > ciPlus1 ? ciPlus1 : ci;
                     int max = ci == min ? ciPlus1 : ci;
                     newComponents[i] = -1;
-                    newComponents[i + 1] = -1;
+                    newComponents[i + 1] = -2;
                     int matchingComponent = newComponents.FindIndex(x => x == max);
                     newComponents[matchingComponent] = min;
                     yield return newComponents;
