@@ -7,7 +7,8 @@ namespace CrawfisSoftware.PCG
 {
     public static class RowEnumerator
     {
-        public static IEnumerable<int> ValidRows(int width, List<int> positions, List<OutflowState> possibleOutflowStates)
+        public static IEnumerable<int> ValidRows(int width, List<int> positions, List<OutflowState> possibleOutflowStates,
+                       OutflowState leftEdgeState = OutflowState.DeadRight, OutflowState rightEdgeState = OutflowState.DeadLeft)
         {
             // Another set cross product problem {a,b,c,d} U {e,f} -> ae, af, be, bf, ... de. 
             // Note, this is NP as well O(4^N), where N is the number of inflows < 31
@@ -22,7 +23,7 @@ namespace CrawfisSoftware.PCG
             {
                 if (CheckForValidRightLeftCombo(positions, outflowState))
                 {
-                    foreach (int row in ValidRowsFixedFlowStates(width, positions, outflowState))
+                    foreach (int row in ValidRowsFixedFlowStates(width, positions, outflowState, leftEdgeState, rightEdgeState))
                     {
                         yield return row;
                     }
@@ -52,7 +53,8 @@ namespace CrawfisSoftware.PCG
             return true;
         }
 
-        public static IEnumerable<int> ValidRowsFixedFlowStates(int width, List<int> positions, IEnumerable<OutflowState> desiredOutflowState)
+        public static IEnumerable<int> ValidRowsFixedFlowStates(int width, List<int> positions, IEnumerable<OutflowState> desiredOutflowState,
+            OutflowState leftEdgeState = OutflowState.DeadRight, OutflowState rightEdgeState = OutflowState.DeadLeft)
         {
             // This is basically a depth-first tree traversal of the possible spans
             // going from left-to-right (down the tree). Foreach first span there
@@ -67,12 +69,12 @@ namespace CrawfisSoftware.PCG
             if (positions[positions.Count - 1] != width-1)
             {
                 inFlows.Add(width);
-                flowStates.Add(OutflowState.DeadLeft);
+                flowStates.Add(rightEdgeState);
             }
             width++;
             //int mask = (2 << (width-1)) -1;
             int currentIndex = 0;
-            var spanEnumerator = SpanCombiner(width, 0, 0, OutflowState.DeadRight, inFlows[0], flowStates[0]).GetEnumerator();
+            var spanEnumerator = SpanCombiner(width, 0, 0, leftEdgeState, inFlows[0], flowStates[0]).GetEnumerator();
             var stack = new Stack<IEnumerator<int>>();
             var indexStack = new Stack<int>();
             var shiftStack = new Stack<int>();
