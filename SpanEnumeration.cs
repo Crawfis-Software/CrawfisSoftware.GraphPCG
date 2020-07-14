@@ -76,7 +76,7 @@ namespace CrawfisSoftware.PCG
             {
                 if ((endStates & OutflowState.Left) == OutflowState.Left)
                 {
-                    // All Even with at least 2 bits + 0;
+                    // All Even with at least 2 bits != 0;
                     foreach (int evenPattern in BitEnumerators.AllEven(width))
                     {
                         if (evenPattern != 0)
