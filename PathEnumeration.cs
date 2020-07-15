@@ -16,14 +16,14 @@ namespace CrawfisSoftware.PCG
             if (start < width - 1) validStates |= OutflowState.Right;
             var outFlowStates = new List<OutflowState>() { validStates };
             int rowIndex = 0;
-            int previousRow = 1 << (width - start - 1);
+            int previousRow = 1 << start;
             //previousRow = 19;
             foreach (int row in RowEnumerator.ValidRows(width, inFlow, outFlowStates))
             //foreach (int row in RowEnumerator.ValidRows(width, previousRow))
-                {
-                    var verticalPaths = new int[height];
+            {
+                var verticalPaths = new int[height];
                 var components = new int[width];
-                components[width-start-1] = 1;
+                components[start] = 1;
                 //components[1] = 1;
                 //components[4] = 2;
                 //components[3] = 2;
@@ -32,7 +32,10 @@ namespace CrawfisSoftware.PCG
                     verticalPaths[0] = row;
                     foreach (var secondRow in RowEnumerator.ValidRows(width, row, components))
                     {
-                        if (ValidateAndUpdateComponents(row, secondRow, ref components, height - 2))
+                        var newComponents = new int[width];
+                        for (int i = 0; i < width; i++)
+                            newComponents[i] = components[i];
+                        if (ValidateAndUpdateComponents(row, secondRow, ref newComponents, height - 2))
                         {
                             verticalPaths[1] = secondRow;
                             yield return verticalPaths;
@@ -88,9 +91,9 @@ namespace CrawfisSoftware.PCG
                 {
                     span = TrimToSpan(outFlows, spanStart, b);
                     numOfOutflowsInSpan = CountSetBits(span);
-                    outFlowBitPattern = outFlowBitPattern >> spanStart;
+                    outFlowBitPattern = outFlows >> spanStart;
                 }
-                bool leftEdge = true;
+                bool rightEdge = true;
                 int addedComponentNum = width; // Some number larger than all other component numbers (for now)
                 bool matched = false;
                 int mask = 1; // << (width - 1);
@@ -100,7 +103,7 @@ namespace CrawfisSoftware.PCG
                     if (numOfOutflowsInSpan == 0) break;
                     if ((span & mask) == mask)
                     {
-                        if (leftEdge && numOfOutflowsInSpan == 1)
+                        if (rightEdge && numOfOutflowsInSpan == 1)
                         {
                             e = i + spanStart;
                             newOutflowComponents[e] = componentB;
@@ -112,14 +115,12 @@ namespace CrawfisSoftware.PCG
                             numOfOutflowsInSpan -= 1;
                             newOutflowComponents[i + spanStart] = addedComponentNum;
                         }
-                        if (!leftEdge) addedComponentNum++;
-                        leftEdge = !leftEdge;
-                        mask = mask << 1;
+                        if (!rightEdge) addedComponentNum++;
+                        rightEdge = !rightEdge;
                     }
+                    mask = mask << 1;
                 }
-                // b's Inflow goes to the Right
                 int c = b + 1;
-                // Try to match b to the next outFlow bit.
                 while (c < width)
                 {
                     if ((inFlowBitPattern & 1) == 1) break;
@@ -127,9 +128,11 @@ namespace CrawfisSoftware.PCG
                     c++;
                 }
                 inFlowBitPattern >>= 1;
+                // b's Inflow goes to the Right
+                // Try to match b to the next outFlow bit.
                 if (!matched)
                 {
-                    outFlowBitPattern = outFlowBitPattern >> (spanLength);
+                    outFlowBitPattern = outFlowBitPattern >> spanLength;
                     e = b + 1;
                     while (e < c)
                     {
@@ -137,7 +140,6 @@ namespace CrawfisSoftware.PCG
                         {
                             newOutflowComponents[e] = componentB;
                             matched = true;
-                            outFlowBitPattern >>= 1;
                             break;
                         }
                         outFlowBitPattern >>= 1;
@@ -213,7 +215,7 @@ namespace CrawfisSoftware.PCG
         private static int TrimToSpan(int bitPattern, int start, int end)
         {
             int trimmedPattern = bitPattern >> start;
-            int mask = (1 << (end - start + 2)) - 1;
+            int mask = (1 << (end - start + 1)) - 1;
             return (mask & trimmedPattern);
         }
 

@@ -14,10 +14,10 @@ namespace CrawfisSoftware.PCG
             // Use ValidRows with states to enumerate all resulting rows.
             var inFlowPositions = InflowsFromBits(width, inFlows);
             var possibleOutFlows = DeterminePathTurns(width, inFlowPositions);
-            //foreach (int row in ValidRows(width, inFlowPositions, possibleOutFlows))
-            //{
-            //    yield return row;
-            //}
+            foreach (int row in ValidRows(width, inFlowPositions, possibleOutFlows))
+            {
+                yield return row;
+            }
             foreach (var validOutFlows in MergeComponents(0, possibleOutFlows.Count - 1, inFlowPositions, components, possibleOutFlows))
             {
                 foreach (int row in ValidRows(width, inFlowPositions, validOutFlows))
@@ -30,13 +30,15 @@ namespace CrawfisSoftware.PCG
         private static List<int> InflowsFromBits(int width, int row)
         {
             var inFlows = new List<int>();
+            int mask = 1;
             for (int i = 0; i < width; i++)
             {
-                int mask = 1 << (width - i - 1);
+                //mask = 1 << (width - i - 1);
                 if ((row & mask) == mask)
                 {
                     inFlows.Add(i);
                 }
+                mask <<= 1;
             }
             return inFlows;
         }
@@ -51,25 +53,25 @@ namespace CrawfisSoftware.PCG
                 int position = inFlows[i];
                 int nextPosition = (i == inFlows.Count-1) ? width : inFlows[i + 1];
                 if (lastPosition + 1 < position)
-                    validStates |= OutflowState.Left;
-                if (position + 1 < nextPosition)
                     validStates |= OutflowState.Right;
+                if (position + 1 < nextPosition)
+                    validStates |= OutflowState.Left;
                 outFlowStates.Add(validStates);
                 lastPosition = position;
             }
             return outFlowStates;
         }
-        private static IEnumerable<List<OutflowState>> MergeComponents(int startIndex, int endIndex, IList<int> inFlows, IList<int> components, List<OutflowState> rowState)
+        public static IEnumerable<List<OutflowState>> MergeComponents(int startIndex, int endIndex, IList<int> inFlows, IList<int> components, List<OutflowState> rowState)
         {
             if ((endIndex - startIndex) < 2)
                 yield break;
             var newStates = new List<OutflowState>(rowState);
             int width = components.Count;
-            yield return newStates;
-            for(int i = startIndex; i < (endIndex-1); i++)
+            //yield return newStates;
+            for(int i = startIndex; i < endIndex; i++)
             {
-                int pos1 = width - 1 - inFlows[i];
-                int pos2 = width - 1 - inFlows[i + 1];
+                int pos1 = inFlows[i];
+                int pos2 = inFlows[i + 1];
                 if (components[pos1] == components[pos2])
                     continue;
                 // Merge i and i+1 and recurse
@@ -127,14 +129,14 @@ namespace CrawfisSoftware.PCG
             int lastPosition = -3;
             foreach(var state in outflowState)
             {
-                if (positions[index] == 0 && (state & OutflowState.Left) == OutflowState.Left)
+                if (positions[index] == 0 && (state & OutflowState.Right) == OutflowState.Right)
                     return false;
-                if (positions[index] == (width-1) && (state & OutflowState.Right) == OutflowState.Right)
+                if (positions[index] == (width-1) && (state & OutflowState.Left) == OutflowState.Left)
                     return false;
                 if ((positions[index] - lastPosition) == 2)
                 {
-                    if ((lastState & OutflowState.Right) == OutflowState.Right &&
-                        (state & OutflowState.Left) == OutflowState.Left)
+                    if ((lastState & OutflowState.Left) == OutflowState.Left &&
+                        (state & OutflowState.Right) == OutflowState.Right)
                         return false;
                 }
                 lastState = state;
@@ -176,7 +178,7 @@ namespace CrawfisSoftware.PCG
                     int currentRow = spanEnumerator.Current;
                     if (currentIndex == inFlows.Count - 1)
                     {
-                        yield return (currentRow >> 1);
+                        yield return currentRow;
                     }
                     else
                     {
@@ -205,7 +207,7 @@ namespace CrawfisSoftware.PCG
             int shiftAmount = width - end - 1;
             foreach(int spanPattern in new SpanEnumeration(0, startState, end-start, endState))
             {
-                yield return (spanPattern << shiftAmount) | rowPattern;
+                yield return (spanPattern << start) | rowPattern;
             }
         }
     }
