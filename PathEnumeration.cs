@@ -22,31 +22,70 @@ namespace CrawfisSoftware.PCG
             //foreach (int row in RowEnumerator.ValidRows(width, previousRow))
             {
                 var verticalPaths = new int[height];
-                var components = new int[width];
-                components[start] = 1;
+                int[][] components = new int[height][];
+                for(int i=0; i < height; i++)
+                    components[i] = new int[width];
+                components[0][start] = 1;
                 //components[1] = 1;
                 //components[4] = 2;
                 //components[3] = 2;
-                if (ValidateAndUpdateComponents(previousRow, row, ref components, height - 1))
+                verticalPaths[0] = row;
+                int endRow = 1 << end;
+                verticalPaths[height - 1] = endRow;
+                foreach (var grid in AllPathRecursive(width, height, 0, verticalPaths, components))
                 {
-                    verticalPaths[0] = row;
-                    foreach (var secondRow in RowEnumerator.ValidRows(width, row, components))
+                    yield return grid;
+                }
+            //    if (ValidateAndUpdateComponents(previousRow, row, ref components, height - 1))
+            //    {
+            //        verticalPaths[0] = row;
+            //        foreach (var secondRow in RowEnumerator.ValidRows(width, row, components))
+            //        {
+            //            var newComponents = new int[width];
+            //            for (int i = 0; i < width; i++)
+            //                newComponents[i] = components[i];
+            //            if (ValidateAndUpdateComponents(row, secondRow, ref newComponents, height - 2))
+            //            {
+            //                verticalPaths[1] = secondRow;
+            //                yield return verticalPaths;
+            //            }
+            //        }
+            //        //yield return verticalPaths;
+            //    }
+            }
+            yield break;
+        }
+
+        private static IEnumerable<IList<int>> AllPathRecursive(int width, int height, int index, IList<int> grid, IList<IList<int>> components)
+        {
+            if (index == (height - 2))
+            {
+                var newComponents = new int[width];
+                //for (int i = 0; i < width; i++)
+                //    newComponents[i] = components[i];
+                if (ValidateAndUpdateComponents(grid[index], grid[height - 1], components, height - index))
+                {
+                    yield return grid;
+                }
+                yield break;
+            }
+            foreach(int child in RowEnumerator.ValidRows(width, grid[index], components[index]))
+            {
+                //var newComponents = new int[width];
+                //for (int i = 0; i < width; i++)
+                //    newComponents[i] = components[i];
+                grid[index + 1] = child;
+                if (ValidateAndUpdateComponents(grid[index], child, components, index, height - index))
+                {
+                    foreach (var newGrid in AllPathRecursive(width, height, index + 1, grid, components))
                     {
-                        var newComponents = new int[width];
-                        for (int i = 0; i < width; i++)
-                            newComponents[i] = components[i];
-                        if (ValidateAndUpdateComponents(row, secondRow, ref newComponents, height - 2))
-                        {
-                            verticalPaths[1] = secondRow;
-                            yield return verticalPaths;
-                        }
+                        yield return newGrid;
                     }
-                    //yield return verticalPaths;
                 }
             }
             yield break;
         }
-        public static bool ValidateAndUpdateComponents(int inFlows, int outFlows, ref int[] components, int maxNestedComponents = System.Int16.MaxValue)
+        public static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, int index, int maxNestedComponents = System.Int16.MaxValue)
         {
             // Given:
             //    a = last known inflow and a matching outflow of d
@@ -61,7 +100,8 @@ namespace CrawfisSoftware.PCG
             //    4) if no match still and e < c, then match b to e.
             //
             bool isValid = true;
-            int width = components.Length;
+            IList<int> components = componentsGrid[index];
+            int width = components.Count;
             var newOutflowComponents = new int[width];
             var componentRemap = new Dictionary<int, int>();
             int a = -1;
