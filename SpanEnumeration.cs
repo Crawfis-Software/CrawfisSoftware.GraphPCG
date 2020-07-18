@@ -36,8 +36,8 @@ namespace CrawfisSoftware.PCG
                     yield return 0;
                 yield break;
             }
-            if((startStates & OutflowState.DeadLeft) == OutflowState.DeadLeft &&
-                (endStates & OutflowState.DeadRight) == OutflowState.DeadRight) // clause not really needed.
+            if((startStates & OutflowState.DeadGoesLeft) == OutflowState.DeadGoesLeft &&
+                (endStates & OutflowState.DeadGoesRight) == OutflowState.DeadGoesRight) // clause not really needed.
             {
                 yield return 0;
                 yield break;
@@ -68,7 +68,7 @@ namespace CrawfisSoftware.PCG
                     }
                 }
                 if ((endStates & OutflowState.Left) == OutflowState.Left 
-                    || (endStates & OutflowState.DeadLeft) == OutflowState.DeadLeft)
+                    || (endStates & OutflowState.DeadGoesLeft) == OutflowState.DeadGoesLeft)
                 {
                     // All 0 + Even;
                     foreach (int evenPattern in BitEnumerators.AllEven(width))
@@ -99,7 +99,7 @@ namespace CrawfisSoftware.PCG
                     }
                 }
                 if ((endStates & OutflowState.Left) == OutflowState.Left
-                    || (endStates & OutflowState.DeadLeft) == OutflowState.DeadLeft)
+                    || (endStates & OutflowState.DeadGoesLeft) == OutflowState.DeadGoesLeft)
                 {
                     // All 0 + Odd
                     foreach (int oddPattern in BitEnumerators.AllOdd(width))

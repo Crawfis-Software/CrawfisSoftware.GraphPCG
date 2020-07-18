@@ -1,33 +1,106 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
+using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
 {
     public static class RowEnumerator
     {
-        public static IEnumerable<int> ValidRows(int width, int inFlows, IList<int> components)
+        private static IList<IList<short>> preComputedRowTables;
+        private static int tableWidth;
+        private static IList<short> RowList(int width, int row)
+        {
+            if (width == tableWidth)
+                return preComputedRowTables[row];
+            return null;
+        }
+        public static void BuildOddTables(int width = 12)
+        {
+            if (width > 16)
+                throw new ArgumentOutOfRangeException("row widths greater than 16 would take too much memory");
+            tableWidth = width;
+            int tableSize = (1 << width);
+            preComputedRowTables = new IList<short>[tableSize];
+            var taskList = new List<Task>();
+            foreach (int row in BitEnumerators.AllOdd(width))
+            {
+                taskList.Add( //BuildTableEntryAsync(width, row));
+                Task.Run(() =>
+                {
+                    BuildTableEntry(width, row);
+                }
+                ));
+            
+            }
+            Task.WaitAll(Task.WhenAll(taskList));
+        }
+
+        private static async Task BuildTableEntryAsync(int width, int row)
+        {
+            BuildTableEntry(width, row);
+            await Task.CompletedTask;
+        }
+        private static void BuildTableEntry(int width, int row)
+        {
+            var validRows = new List<short>();
+            //var inFlows = InflowsFromBits(width, row);
+            foreach (int child in RowEnumerator.ValidRows(width, row))
+            {
+                validRows.Add((short)child);
+            }
+            preComputedRowTables[row] = validRows;
+        }
+
+        public static void BuildEvenTables(int width = 12)
+        {
+            if (width > 16)
+                throw new ArgumentOutOfRangeException("row widths greater than 16 would take too much memory");
+            tableWidth = width;
+            int tableSize = (1 << width);
+            preComputedRowTables = new IList<short>[tableSize];
+            var taskList = new List<Task>();
+            foreach (int row in BitEnumerators.AllEven(width))
+            {
+                taskList.Add( //BuildTableEntryAsync(width, row));
+                Task.Run(() =>
+                {
+                    BuildTableEntry(width, row);
+                }
+                ));
+
+            }
+            Task.WaitAll(Task.WhenAll(taskList));
+        }
+        public static IEnumerable<int> ValidRows(int width, int inFlows)
         {
             // Find all possible merges.
             // Specify all possible states for each merge configuration.
             // Use ValidRows with states to enumerate all resulting rows.
-            var inFlowPositions = InflowsFromBits(width, inFlows);
-            var possibleOutFlows = DeterminePathTurns(width, inFlowPositions);
-            foreach (int row in ValidRows(width, inFlowPositions, possibleOutFlows))
+            if (inFlows == 0)
+                yield break;
+            var rowList = RowList(width, inFlows);
+            if (rowList != null)
             {
-                yield return row;
+                foreach (int row in rowList)
+                    yield return row;
+                yield break;
             }
-            foreach (var validOutFlows in MergeComponents(0, possibleOutFlows.Count - 1, inFlowPositions, components, possibleOutFlows))
+            var inFlowPositions = InflowsFromBits(width, inFlows);
+            var components = new List<int>(width);
+            // any set of unique numbers will work. Just trying to avoid any merge rejects
+            for (int i = 0; i < width; i++)
+                components.Add( i + 1);
+            var possibleOutFlows = OutflowStates.DetermineOutflowStates(width, inFlowPositions, components);
+            foreach (var state in possibleOutFlows)
             {
-                foreach (int row in ValidRows(width, inFlowPositions, validOutFlows))
+                foreach (int row in ValidRowsFixedFlowStates(width, inFlowPositions, state))
                 {
                     yield return row;
                 }
             }
         }
 
-        private static List<int> InflowsFromBits(int width, int row)
+        public static List<int> InflowsFromBits(int width, int row)
         {
             var inFlows = new List<int>();
             int mask = 1;
@@ -43,51 +116,59 @@ namespace CrawfisSoftware.PCG
             return inFlows;
         }
 
-        private static List<OutflowState>  DeterminePathTurns(int width, List<int> inFlows)
-        {
-            var outFlowStates = new List<OutflowState>(inFlows.Count);
-            int lastPosition = -1;
-            for(int i = 0; i < inFlows.Count; i++)
-            {
-                OutflowState validStates = OutflowState.Up;
-                int position = inFlows[i];
-                int nextPosition = (i == inFlows.Count-1) ? width : inFlows[i + 1];
-                if (lastPosition + 1 < position)
-                    validStates |= OutflowState.Right;
-                if (position + 1 < nextPosition)
-                    validStates |= OutflowState.Left;
-                outFlowStates.Add(validStates);
-                lastPosition = position;
-            }
-            return outFlowStates;
-        }
-        public static IEnumerable<List<OutflowState>> MergeComponents(int startIndex, int endIndex, IList<int> inFlows, IList<int> components, List<OutflowState> rowState)
+        public static IEnumerable<List<OutflowState>> MergeComponents(int startIndex, int endIndex, IList<int> inFlows, List<OutflowState> rowState)
         {
             if ((endIndex - startIndex) < 2)
                 yield break;
+            int numberOfInFlows = inFlows.Count;
             var newStates = new List<OutflowState>(rowState);
-            int width = components.Count;
             //yield return newStates;
-            for(int i = startIndex; i < endIndex; i++)
+            for (int i = startIndex; i < endIndex; i++)
             {
-                int pos1 = inFlows[i];
-                int pos2 = inFlows[i + 1];
-                if (components[pos1] == components[pos2])
-                    continue;
+                for(int j = 0; j < numberOfInFlows; j++)
+                    newStates[j] = rowState[j];
                 // Merge i and i+1 and recurse
-                newStates[i] = OutflowState.DeadLeft;
-                newStates[i + 1] = OutflowState.DeadRight;
+                newStates[i] = OutflowState.DeadGoesLeft;
+                newStates[i + 1] = OutflowState.DeadGoesRight;
                 yield return newStates;
-                foreach (var state in MergeComponents(startIndex, i - 1, inFlows, components, newStates))
+                foreach (var state in MergeComponents(startIndex, i - 1, inFlows, newStates))
                 {
                     yield return state;
                 }
-                foreach (var state in MergeComponents(i+2, endIndex, inFlows, components, newStates))
+                foreach (var state in MergeComponents(i + 2, endIndex, inFlows, newStates))
                 {
                     yield return state;
                 }
             }
         }
+
+        //public static IEnumerable<List<OutflowState>> MergeComponents(int startIndex, int endIndex, IList<int> inFlows, IList<int> components, List<OutflowState> rowState)
+        //{
+        //    if ((endIndex - startIndex) < 2)
+        //        yield break;
+        //    var newStates = new List<OutflowState>(rowState);
+        //    int width = components.Count;
+        //    //yield return newStates;
+        //    for (int i = startIndex; i < endIndex; i++)
+        //    {
+        //        int pos1 = inFlows[i];
+        //        int pos2 = inFlows[i + 1];
+        //        if (components[pos1] == components[pos2])
+        //            continue;
+        //        // Merge i and i+1 and recurse
+        //        newStates[i] = OutflowState.DeadLeft;
+        //        newStates[i + 1] = OutflowState.DeadRight;
+        //        yield return newStates;
+        //        foreach (var state in MergeComponents(startIndex, i - 1, inFlows, components, newStates))
+        //        {
+        //            yield return state;
+        //        }
+        //        foreach (var state in MergeComponents(i + 2, endIndex, inFlows, components, newStates))
+        //        {
+        //            yield return state;
+        //        }
+        //    }
+        //}
 
         /// <summary>
         /// Enumerate all rows that have the desired inflows and outflow states (left, up, right). All merges
@@ -97,54 +178,29 @@ namespace CrawfisSoftware.PCG
         /// <param name="positions"></param>
         /// <param name="possibleOutflowStates"></param>
         /// <returns></returns>
-        public static IEnumerable<int> ValidRows(int width, List<int> positions, List<OutflowState> possibleOutflowStates)
-        {
-            // Another set cross product problem {a,b,c,d} U {e,f} -> ae, af, be, bf, ... de. 
-            // Note, this is NP as well O(4^N), where N is the number of inflows < 31
-            var stateSets = new List<IEnumerable<OutflowState>>(possibleOutflowStates.Count);
-            foreach(var flags in possibleOutflowStates)
-            {
-                var enumValues = EnumerableExtensions.EnumFlagSubsets<OutflowState>(flags);
-                stateSets.Add(enumValues);
-            }
-            var crossProduct = EnumerableExtensions.CartesianProduct<OutflowState>(stateSets);
-            foreach (var outflowState in crossProduct)
-            {
-                if (CheckForValidRightLeftCombo(width, positions, outflowState))
-                {
-                    foreach (int row in ValidRowsFixedFlowStates(width, positions, outflowState))
-                    {
-                        yield return row;
-                    }
-                }
-            }
-            yield break;
-        }
-
-        private static bool CheckForValidRightLeftCombo(int width, List<int> positions, IEnumerable<OutflowState> outflowState)
-        {
-            // Check case where R->L and width == 2. Not enough room for both.
-            int index = 0;
-            var lastState = OutflowState.Up;
-            int lastPosition = -3;
-            foreach(var state in outflowState)
-            {
-                if (positions[index] == 0 && (state & OutflowState.Right) == OutflowState.Right)
-                    return false;
-                if (positions[index] == (width-1) && (state & OutflowState.Left) == OutflowState.Left)
-                    return false;
-                if ((positions[index] - lastPosition) == 2)
-                {
-                    if ((lastState & OutflowState.Left) == OutflowState.Left &&
-                        (state & OutflowState.Right) == OutflowState.Right)
-                        return false;
-                }
-                lastState = state;
-                lastPosition = positions[index];
-                index++;
-            }
-            return true;
-        }
+        //public static IEnumerable<int> ValidRows(int width, List<int> positions, List<OutflowState> possibleOutflowStates)
+        //{
+        //    // Another set cross product problem {a,b,c,d} U {e,f} -> ae, af, be, bf, ... de. 
+        //    // Note, this is NP as well O(4^N), where N is the number of inflows < 31
+        //    var stateSets = new List<IEnumerable<OutflowState>>(possibleOutflowStates.Count);
+        //    foreach(var flags in possibleOutflowStates)
+        //    {
+        //        var enumValues = EnumerableExtensions.EnumFlagSubsets<OutflowState>(flags);
+        //        stateSets.Add(enumValues);
+        //    }
+        //    var crossProduct = EnumerableExtensions.CartesianProduct<OutflowState>(stateSets);
+        //    foreach (var outflowState in crossProduct)
+        //    {
+        //        if (CheckForValidRightLeftCombo(width, positions, outflowState))
+        //        {
+        //            foreach (int row in ValidRowsFixedFlowStates(width, positions, outflowState))
+        //            {
+        //                yield return row;
+        //            }
+        //        }
+        //    }
+        //    yield break;
+        //}
 
         public static IEnumerable<int> ValidRowsFixedFlowStates(int width, List<int> positions, IEnumerable<OutflowState> desiredOutflowState)
         {
@@ -152,6 +208,7 @@ namespace CrawfisSoftware.PCG
             // going from left-to-right (down the tree). Foreach first span there
             // are a set of children associated with the set of second spans, for each
             // of these there is a set of children with the third span, etc.
+            if (positions.Count == 0) yield break;
             var inFlows = new List<int>(positions.Count + 1);
             foreach (int pos in positions)
                 inFlows.Add(pos);
@@ -161,12 +218,12 @@ namespace CrawfisSoftware.PCG
             if (positions[positions.Count - 1] != width-1)
             {
                 inFlows.Add(width);
-                flowStates.Add(OutflowState.DeadLeft);
+                flowStates.Add(OutflowState.DeadGoesLeft);
             }
             width++;
             //int mask = (2 << (width-1)) -1;
             int currentIndex = 0;
-            var spanEnumerator = SpanCombiner(width, 0, 0, OutflowState.DeadRight, inFlows[0], flowStates[0]).GetEnumerator();
+            var spanEnumerator = SpanCombiner(width, 0, 0, OutflowState.DeadGoesRight, inFlows[0], flowStates[0]).GetEnumerator();
             var stack = new Stack<IEnumerator<int>>();
             var indexStack = new Stack<int>();
             var shiftStack = new Stack<int>();

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
@@ -10,48 +9,31 @@ namespace CrawfisSoftware.PCG
     {
         public static IEnumerable<IList<int>> AllPaths(int width, int height, int start, int end)
         {
+            RowEnumerator.BuildOddTables(width);
             var inFlow = new List<int>() { start };
-            var validStates = OutflowState.Up;
-            if (start > 0) validStates |= OutflowState.Left;
-            if (start < width - 1) validStates |= OutflowState.Right;
-            var outFlowStates = new List<OutflowState>() { validStates };
-            int rowIndex = 0;
-            int previousRow = 1 << start;
-            //previousRow = 19;
-            foreach (int row in RowEnumerator.ValidRows(width, inFlow, outFlowStates))
-            //foreach (int row in RowEnumerator.ValidRows(width, previousRow))
+            //var validStates = OutflowState.Up;
+            //if (start > 0) validStates |= OutflowState.Left;
+            //if (start < width - 1) validStates |= OutflowState.Right;
+            //var outFlowStates = new List<OutflowState>() { validStates };
+            var outFlowStates = OutflowStates.DetermineOutflowStates(width, inFlow);
+            foreach (var outFlowState in outFlowStates)
             {
-                var verticalPaths = new int[height];
-                int[][] components = new int[height][];
-                for(int i=0; i < height; i++)
-                    components[i] = new int[width];
-                components[0][start] = 1;
-                //components[1] = 1;
-                //components[4] = 2;
-                //components[3] = 2;
-                verticalPaths[0] = row;
-                int endRow = 1 << end;
-                verticalPaths[height - 1] = endRow;
-                foreach (var grid in AllPathRecursive(width, height, 0, verticalPaths, components))
+                //foreach (int row in RowEnumerator.ValidRowsFixedFlowStates(width, inFlow, outFlowState))
+                //foreach (int row in RowEnumerator.ValidRows(width, previousRow))
                 {
-                    yield return grid;
+                    var verticalPaths = new int[height];
+                    int[][] components = new int[height][];
+                    for (int i = 0; i < height; i++)
+                        components[i] = new int[width];
+                    components[0][start] = 1;
+                    verticalPaths[0] = 1 << start; // row;
+                    int endRow = 1 << end;
+                    verticalPaths[height - 1] = endRow;
+                    foreach (var grid in AllPathRecursive(width, height, 0, verticalPaths, components))
+                    {
+                        yield return grid;
+                    }
                 }
-            //    if (ValidateAndUpdateComponents(previousRow, row, ref components, height - 1))
-            //    {
-            //        verticalPaths[0] = row;
-            //        foreach (var secondRow in RowEnumerator.ValidRows(width, row, components))
-            //        {
-            //            var newComponents = new int[width];
-            //            for (int i = 0; i < width; i++)
-            //                newComponents[i] = components[i];
-            //            if (ValidateAndUpdateComponents(row, secondRow, ref newComponents, height - 2))
-            //            {
-            //                verticalPaths[1] = secondRow;
-            //                yield return verticalPaths;
-            //            }
-            //        }
-            //        //yield return verticalPaths;
-            //    }
             }
             yield break;
         }
@@ -60,27 +42,33 @@ namespace CrawfisSoftware.PCG
         {
             if (index == (height - 2))
             {
-                var newComponents = new int[width];
-                //for (int i = 0; i < width; i++)
-                //    newComponents[i] = components[i];
-                if (ValidateAndUpdateComponents(grid[index], grid[height - 1], components, height - index))
+                if (ValidateAndUpdateComponents(grid[index], grid[height - 1], components, index))
                 {
                     yield return grid;
                 }
                 yield break;
             }
-            foreach(int child in RowEnumerator.ValidRows(width, grid[index], components[index]))
+            // Todo: Compute all Valid OutflowStates (using components)
+            //  Loop over those calling a more constrained ValidRows.
+            int inFlow = grid[index];
+            var inFlows = RowEnumerator.InflowsFromBits(width, inFlow);
+            var inFlowComponents = new List<int>(inFlows.Count);
+            for (int i = 0; i < inFlows.Count; i++)
+                inFlowComponents.Add(components[index][inFlows[i]]);
+            foreach (var outFlowState in OutflowStates.DetermineOutflowStates(width, inFlows, inFlowComponents))
             {
-                //var newComponents = new int[width];
-                //for (int i = 0; i < width; i++)
-                //    newComponents[i] = components[i];
-                grid[index + 1] = child;
-                if (ValidateAndUpdateComponents(grid[index], child, components, index, height - index))
+                foreach (int child in RowEnumerator.ValidRowsFixedFlowStates(width, inFlows, outFlowState))
                 {
-                    foreach (var newGrid in AllPathRecursive(width, height, index + 1, grid, components))
+                    grid[index + 1] = child;
+                    if (ValidateAndUpdateComponents(inFlow, child, components, index, height - index))
                     {
-                        yield return newGrid;
+                        foreach (var newGrid in AllPathRecursive(width, height, index + 1, grid, components))
+                        {
+                            yield return newGrid;
+                        }
                     }
+                    //else
+                    //    Console.WriteLine("Cannot go from " + inFlow + " to " + child);
                 }
             }
             yield break;
@@ -102,7 +90,9 @@ namespace CrawfisSoftware.PCG
             bool isValid = true;
             IList<int> components = componentsGrid[index];
             int width = components.Count;
-            var newOutflowComponents = new int[width];
+            var newOutflowComponents = componentsGrid[index+1]; // new int[width];
+            for (int i = 0; i < width; i++)
+                newOutflowComponents[i] = 0;
             var componentRemap = new Dictionary<int, int>();
             int a = -1;
             int d = -1;
@@ -208,13 +198,6 @@ namespace CrawfisSoftware.PCG
                         }
                     }
                 }
-                // Reset a and d
-                //while (b < width)
-                //{
-                //    if ((inFlowBitPattern % 2) == 1) break;
-                //    inFlowBitPattern >>= 1;
-                //    b++;
-                //}
                 a = b;
                 if(matched)
                     d = e;
@@ -227,7 +210,7 @@ namespace CrawfisSoftware.PCG
             int lastMatched = 1;
             componentRemap.Clear();
             int newComponentNum = 1;
-            for(int i = 0; i < width; i ++)
+            for (int i = 0; i < width; i++)
             {
                 int componentNum = newOutflowComponents[i];
                 if (componentNum != 0)
@@ -238,7 +221,7 @@ namespace CrawfisSoftware.PCG
                     }
                     else
                     {
-                        if(componentRemap[componentNum] - lastMatched > maxNestedComponents)
+                        if (componentRemap[componentNum] - lastMatched > maxNestedComponents)
                         {
                             isValid = false;
                             break;
