@@ -41,7 +41,7 @@ namespace CrawfisSoftware.PCG
                 if (TryGetValidRow(previousRow, components, j, out nextRow, out horizontalSpans))
                 {
                     verticalPaths[j+1] = nextRow;
-                    horizontalPaths[j+1] = horizontalSpans;
+                    horizontalPaths[j] = horizontalSpans;
                     previousRow = nextRow;
                 }
                 else
@@ -55,13 +55,13 @@ namespace CrawfisSoftware.PCG
             {
                 if (PathEnumeration.ValidateAndUpdateComponents(previousRow, endRow, components, height - 2, out horizontalSpans, 1))
                 {
-                    horizontalPaths[height - 1] = horizontalSpans;
+                    horizontalPaths[height - 2] = horizontalSpans;
                     break;
                 }
                 if (TryGetValidRow(verticalPaths[height-3], components, height - 3, out previousRow, out horizontalSpans))
                 {
                     verticalPaths[height - 2] = previousRow;
-                    horizontalPaths[height - 2] = horizontalSpans;
+                    horizontalPaths[height - 3] = horizontalSpans;
                     lastRowSearchAttempt++;
                 }
                 else
