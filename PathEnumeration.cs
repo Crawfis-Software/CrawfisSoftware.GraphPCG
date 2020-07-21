@@ -231,7 +231,18 @@ namespace CrawfisSoftware.PCG
             }
 
             // Renumber components left to right
-            int lastMatched = 1;
+            for (int i = 0; i < width; i++)
+            {
+                int componentNum = newOutflowComponents[i];
+                if (componentNum != 0)
+                {
+                    if (componentRemap.ContainsKey(componentNum))
+                    {
+                        newOutflowComponents[i] = componentRemap[componentNum];
+                    }
+                }
+            }
+            int lastMatched = 0;
             componentRemap.Clear();
             int newComponentNum = 1;
             for (int i = 0; i < width; i++)

@@ -45,6 +45,7 @@
     <Compile Include="BitEnumerators.cs" />
     <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="LoopGenerator.cs" />
+    <Compile Include="MazeWrapperFromGridBitArrays.cs" />
     <Compile Include="MergeLoops.cs" />
     <Compile Include="OutflowStates.cs" />
     <Compile Include="PathEnumeration.cs" />
