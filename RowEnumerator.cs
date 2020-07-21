@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Policy;
 using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
 {
     public static class RowEnumerator
     {
+        private static readonly System.Random defaultRandomGenerator = new System.Random();
         private static IList<IList<short>> preComputedRowTables;
         private static int tableWidth;
         private static IList<short> RowList(int width, int row)
@@ -70,6 +72,20 @@ namespace CrawfisSoftware.PCG
 
             }
             Task.WaitAll(Task.WhenAll(taskList));
+        }
+
+        public static int GetRandomRow(int width, int inFlows, System.Random random)
+        {
+            if (preComputedRowTables == null)
+                throw new InvalidOperationException("Tables must be built first. Odd tables for paths, even for loops");
+            var rowList = RowList(width, inFlows);
+            if (rowList == null)
+            {
+                throw new ArgumentException("The number of inFlows (bits in the inFlows variable) is not odd, or width is too large");
+            }
+            int count = rowList.Count;
+            int randomIndex = random.Next(0, count);
+            return rowList[randomIndex];
         }
         public static IEnumerable<int> ValidRows(int width, int inFlows)
         {

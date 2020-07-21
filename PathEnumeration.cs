@@ -16,7 +16,7 @@ namespace CrawfisSoftware.PCG
             //if (start < width - 1) validStates |= OutflowState.Right;
             //var outFlowStates = new List<OutflowState>() { validStates };
             var outFlowStates = OutflowStates.DetermineOutflowStates(width, inFlow);
-            foreach (var outFlowState in outFlowStates)
+            //foreach (var outFlowState in outFlowStates)
             {
                 //foreach (int row in RowEnumerator.ValidRowsFixedFlowStates(width, inFlow, outFlowState))
                 //foreach (int row in RowEnumerator.ValidRows(width, previousRow))
@@ -109,11 +109,12 @@ namespace CrawfisSoftware.PCG
             inFlowBitPattern >>= 1;
             int spanStart = a + 1;
             int spanLength = b - spanStart + 1;
-            while ((spanStart < width) && (spanLength > 0))
+            while ((spanStart < width) && (spanLength > 0) )
             {
                 int e = d+1;
                 int span = 0;
                 int componentB = (b < width) ? components[b] : 0;
+                //if (componentB == 0) throw new InvalidOperationException("ComponentB is zero!");
                 int tempComponentNum;
                 if (componentRemap.TryGetValue(componentB, out tempComponentNum)) componentB = tempComponentNum;
                 int numOfOutflowsInSpan = 0;
@@ -158,7 +159,7 @@ namespace CrawfisSoftware.PCG
                     c++;
                 }
                 inFlowBitPattern >>= 1;
-                // b's Inflow goes to the Right
+                // b's Inflow goes to the Left
                 // Try to match b to the next outFlow bit.
                 if (!matched)
                 {
@@ -179,6 +180,7 @@ namespace CrawfisSoftware.PCG
                     if (!matched && (c < width))
                     {
                         int componentC = components[c];
+                        if (componentC == 0) throw new InvalidOperationException("ComponentC is zero!");
                         if (componentRemap.TryGetValue(componentC, out tempComponentNum)) componentC = tempComponentNum;
                         if (componentB == componentC) 
                             isValid = false;
@@ -189,6 +191,7 @@ namespace CrawfisSoftware.PCG
                         }
                         // Update d and c
                         d = e;
+                        b = c;
                         c++;
                         while (c < width)
                         {
@@ -196,6 +199,7 @@ namespace CrawfisSoftware.PCG
                             inFlowBitPattern >>= 1;
                             c++;
                         }
+                        inFlowBitPattern >>= 1;
                     }
                 }
                 a = b;

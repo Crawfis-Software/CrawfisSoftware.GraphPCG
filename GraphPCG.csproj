@@ -49,6 +49,7 @@
     <Compile Include="OutflowStates.cs" />
     <Compile Include="PathEnumeration.cs" />
     <Compile Include="PathEnumerationOld.cs" />
+    <Compile Include="PathGenerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RowEnumerator.cs" />
     <Compile Include="SpanEnumeration.cs" />
