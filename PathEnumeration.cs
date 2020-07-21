@@ -40,9 +40,10 @@ namespace CrawfisSoftware.PCG
 
         private static IEnumerable<IList<int>> AllPathRecursive(int width, int height, int index, IList<int> grid, IList<IList<int>> components)
         {
+            int horizontalSpans;
             if (index == (height - 2))
             {
-                if (ValidateAndUpdateComponents(grid[index], grid[height - 1], components, index))
+                if (ValidateAndUpdateComponents(grid[index], grid[height - 1], components, index, out horizontalSpans))
                 {
                     yield return grid;
                 }
@@ -60,7 +61,7 @@ namespace CrawfisSoftware.PCG
                 foreach (int child in RowEnumerator.ValidRowsFixedFlowStates(width, inFlows, outFlowState))
                 {
                     grid[index + 1] = child;
-                    if (ValidateAndUpdateComponents(inFlow, child, components, index, height - index))
+                    if (ValidateAndUpdateComponents(inFlow, child, components, index, out horizontalSpans, height - index))
                     {
                         foreach (var newGrid in AllPathRecursive(width, height, index + 1, grid, components))
                         {
@@ -73,7 +74,7 @@ namespace CrawfisSoftware.PCG
             }
             yield break;
         }
-        public static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, int index, int maxNestedComponents = System.Int16.MaxValue)
+        public static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, int index, out int horizontalSpans, int maxNestedComponents = System.Int16.MaxValue)
         {
             // Given:
             //    a = last known inflow and a matching outflow of d
@@ -99,6 +100,8 @@ namespace CrawfisSoftware.PCG
             int b = 0;
             int inFlowBitPattern = inFlows;
             int outFlowBitPattern = outFlows;
+            horizontalSpans = 0;
+            int addedComponentNum = width; // Some number larger than all other component numbers (for now)
             // Find first outflow bit (b)
             while (b < width)
             {
@@ -125,7 +128,6 @@ namespace CrawfisSoftware.PCG
                     outFlowBitPattern = outFlows >> spanStart;
                 }
                 bool rightEdge = true;
-                int addedComponentNum = width; // Some number larger than all other component numbers (for now)
                 bool matched = false;
                 int mask = 1; // << (width - 1);
                 // add any extra outflow pairs as new components, if odd number of bits, match b to the last outflow bit.
@@ -139,14 +141,26 @@ namespace CrawfisSoftware.PCG
                             e = i + spanStart;
                             newOutflowComponents[e] = componentB;
                             matched = true;
+                            int bitPattern = ((1 << (b - e)) - 1) << e;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans = horizontalSpans | bitPattern;
                             break;
                         }
-                        else
+                        //else
                         {
                             numOfOutflowsInSpan -= 1;
                             newOutflowComponents[i + spanStart] = addedComponentNum;
                         }
-                        if (!rightEdge) addedComponentNum++;
+                        if (!rightEdge)
+                        {
+                            // new loop 
+                            addedComponentNum++;
+                            e = i + spanStart;
+                            int bitPattern = ((1 << (e - d)) - 1) << d;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans = horizontalSpans | bitPattern;
+                        }
+                        d = i + spanStart;
                         rightEdge = !rightEdge;
                     }
                     mask = mask << 1;
@@ -171,6 +185,9 @@ namespace CrawfisSoftware.PCG
                         {
                             newOutflowComponents[e] = componentB;
                             matched = true;
+                            int bitPattern = ((1 << (e - b)) - 1) << b;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans = horizontalSpans | bitPattern;
                             break;
                         }
                         outFlowBitPattern >>= 1;
@@ -188,6 +205,9 @@ namespace CrawfisSoftware.PCG
                         {
                             // Remap component c to b.
                             componentRemap[componentC] = componentB;
+                            int bitPattern = ((1 << (c - b)) - 1) << b;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans = horizontalSpans | bitPattern;
                         }
                         // Update d and c
                         d = e;
@@ -235,7 +255,7 @@ namespace CrawfisSoftware.PCG
                     newOutflowComponents[i] = componentRemap[componentNum];
                 }
             }
-            components = newOutflowComponents;
+            //components = newOutflowComponents;
             return isValid;
         }
 

@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
 {
     public class PathGenerator
     {
-        private const int maxDefaultAttempts = 1000;
+        private const int maxDefaultAttempts = 10000;
         private readonly int width;
         private readonly int height;
         private readonly Random random;
@@ -20,14 +17,15 @@ namespace CrawfisSoftware.PCG
             this.random = random;
             RowEnumerator.BuildOddTables(width);
         }
-        public IList<int> GenerateRandomPath(int start, int end)
+        public void GenerateRandomPath(int start, int end, out IList<int> verticalPaths, out IList<int> horizontalPaths)
         {
             // Build row tables for efficiency (if width < 16)
             // For each row
             // Determine # of Row entries and randomly pick one
             // If this row doesn't work with the previous row, repeat above step until it does or some count (or just repeat entire grid all of the time)
             // Ensure the end row is compatible, if not handle previous row like above.
-            var verticalPaths = new int[height];
+            verticalPaths = new int[height];
+            horizontalPaths = new int[height];
             int[][] components = new int[height][];
             for (int i = 0; i < height; i++)
                 components[i] = new int[width];
@@ -35,14 +33,15 @@ namespace CrawfisSoftware.PCG
             verticalPaths[0] = 1 << start; // row;
             int endRow = 1 << end;
             verticalPaths[height - 1] = endRow;
-            //verticalPaths[height - 1] = endRow;
             int previousRow = verticalPaths[0];
+            int horizontalSpans;
             for (int j = 0; j < height-2; j++)
             {
                 int nextRow;
-                if (TryGetValidRow(previousRow, components, j, out nextRow))
+                if (TryGetValidRow(previousRow, components, j, out nextRow, out horizontalSpans))
                 {
                     verticalPaths[j+1] = nextRow;
+                    horizontalPaths[j+1] = horizontalSpans;
                     previousRow = nextRow;
                 }
                 else
@@ -50,19 +49,20 @@ namespace CrawfisSoftware.PCG
                     throw new InvalidOperationException("Sorry, this search seems to be too hard!");
                 }
             }
-            int secondToLastRow;
             previousRow = verticalPaths[height - 2];
             int lastRowSearchAttempt = 0;
             while (lastRowSearchAttempt < maxDefaultAttempts)
             {
-                if (PathEnumeration.ValidateAndUpdateComponents(previousRow, endRow, components, height - 2, 1))
+                if (PathEnumeration.ValidateAndUpdateComponents(previousRow, endRow, components, height - 2, out horizontalSpans, 1))
+                {
+                    horizontalPaths[height - 1] = horizontalSpans;
                     break;
-                if (TryGetValidRow(verticalPaths[height-3], components, height - 3, out previousRow))
+                }
+                if (TryGetValidRow(verticalPaths[height-3], components, height - 3, out previousRow, out horizontalSpans))
                 {
                     verticalPaths[height - 2] = previousRow;
-                    //previousRow = secondToLastRow;
+                    horizontalPaths[height - 2] = horizontalSpans;
                     lastRowSearchAttempt++;
-                    //break;
                 }
                 else
                 {
@@ -71,15 +71,14 @@ namespace CrawfisSoftware.PCG
             }
             if(lastRowSearchAttempt >= maxDefaultAttempts)
                 throw new InvalidOperationException("Sorry, this search seems to be too hard!");
-
-            return verticalPaths;
         }
 
-        private bool TryGetValidRow(int previousRow, IList<IList<int>> componentsGrid, int index, out int nextRow, int maxNumberOfTries = maxDefaultAttempts)
+        private bool TryGetValidRow(int previousRow, IList<IList<int>> componentsGrid, int index, out int nextRow, out int horizontalSpans, int maxNumberOfTries = maxDefaultAttempts)
         {
+            horizontalSpans = 0;
             nextRow = RowEnumerator.GetRandomRow(width, previousRow, random);
             int searchAttempt = 0;
-            while((searchAttempt < maxNumberOfTries) && !PathEnumeration.ValidateAndUpdateComponents(previousRow, nextRow, componentsGrid, index))
+            while((searchAttempt < maxNumberOfTries) && !PathEnumeration.ValidateAndUpdateComponents(previousRow, nextRow, componentsGrid, index, out horizontalSpans))
             {
                 nextRow = RowEnumerator.GetRandomRow(width, previousRow, random);
                 searchAttempt++;
