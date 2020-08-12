@@ -21,7 +21,7 @@ namespace CrawfisSoftware.PCG
         }
         public static IEnumerable<int> EnumerateLDSpans(int width)
         {
-            var spanEnumerator = new SpanEnumeration(0, OutflowState.Left, width - 1, OutflowState.DeadLeft);
+            var spanEnumerator = new SpanEnumeration(0, OutflowState.Left, width - 1, OutflowState.DeadGoesLeft);
             return spanEnumerator;
         }
         public static IEnumerable<int> EnumerateRLSpans(int width)
@@ -41,7 +41,7 @@ namespace CrawfisSoftware.PCG
         }
         public static IEnumerable<int> EnumerateRDSpans(int width)
         {
-            var spanEnumerator = new SpanEnumeration(0, OutflowState.Right, width - 1, OutflowState.DeadLeft);
+            var spanEnumerator = new SpanEnumeration(0, OutflowState.Right, width - 1, OutflowState.DeadGoesLeft);
             return spanEnumerator;
         }
     }
