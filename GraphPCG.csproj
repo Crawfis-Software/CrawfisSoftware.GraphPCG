@@ -70,5 +70,8 @@
       <Name>Maze</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="GraphPCGClassDiagram.cd" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
