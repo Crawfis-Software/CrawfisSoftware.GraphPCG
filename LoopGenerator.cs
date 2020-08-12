@@ -85,11 +85,6 @@ namespace CrawfisSoftware.PCG.Loops
         private void CreateNextRow(int desiredNumberOfComponents)
         {
             int lastEnd = -1;
-            int componentToTryToRemove = 0;
-            //if (desiredNumberOfComponents < currentNumberOfComponents)
-            //{
-            //    componentToTryToRemove = this.RandomGenerator.Next(currentNumberOfComponents) + 1;
-            //}
             spanEndPoints.Add(Width);
             for (int i = 0; i < spanEndPoints.Count - 1; i++)
             {

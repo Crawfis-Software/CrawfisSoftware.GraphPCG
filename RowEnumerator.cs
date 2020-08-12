@@ -7,7 +7,6 @@ namespace CrawfisSoftware.PCG
 {
     public static class RowEnumerator
     {
-        private static readonly System.Random defaultRandomGenerator = new System.Random();
         private static IList<IList<short>> preComputedRowTables;
         private static int tableWidth;
         private static IList<short> RowList(int width, int row)
@@ -37,11 +36,6 @@ namespace CrawfisSoftware.PCG
             Task.WaitAll(Task.WhenAll(taskList));
         }
 
-        private static async Task BuildTableEntryAsync(int width, int row)
-        {
-            BuildTableEntry(width, row);
-            await Task.CompletedTask;
-        }
         private static void BuildTableEntry(int width, int row)
         {
             var validRows = new List<short>();
@@ -86,6 +80,18 @@ namespace CrawfisSoftware.PCG
             int count = rowList.Count;
             int randomIndex = random.Next(0, count);
             return rowList[randomIndex];
+        }
+        
+        internal static IList<short> CandidateRows(int width, int inFlows)
+        {
+            if (preComputedRowTables == null)
+                throw new InvalidOperationException("Tables must be built first. Odd tables for paths, even for loops");
+            var rowList = RowList(width, inFlows);
+            if (rowList == null)
+            {
+                throw new ArgumentException("The number of inFlows (bits in the inFlows variable) is not odd, or width is too large");
+            }
+            return rowList;
         }
         public static IEnumerable<int> ValidRows(int width, int inFlows)
         {
@@ -236,10 +242,8 @@ namespace CrawfisSoftware.PCG
                 inFlows.Add(width);
                 flowStates.Add(OutflowState.DeadGoesLeft);
             }
-            width++;
-            //int mask = (2 << (width-1)) -1;
             int currentIndex = 0;
-            var spanEnumerator = SpanCombiner(width, 0, 0, OutflowState.DeadGoesRight, inFlows[0], flowStates[0]).GetEnumerator();
+            var spanEnumerator = SpanCombiner(0, 0, OutflowState.DeadGoesRight, inFlows[0], flowStates[0]).GetEnumerator();
             var stack = new Stack<IEnumerator<int>>();
             var indexStack = new Stack<int>();
             var shiftStack = new Stack<int>();
@@ -259,7 +263,7 @@ namespace CrawfisSoftware.PCG
                         indexStack.Push(currentIndex);
                         shiftStack.Push(currentShiftAmount);
                         currentIndex++; // next span
-                        spanEnumerator = SpanCombiner(width, currentRow, inFlows[currentIndex-1]+1, flowStates[currentIndex-1], inFlows[currentIndex], flowStates[currentIndex]).GetEnumerator();
+                        spanEnumerator = SpanCombiner(currentRow, inFlows[currentIndex-1]+1, flowStates[currentIndex-1], inFlows[currentIndex], flowStates[currentIndex]).GetEnumerator();
                     }
                 }
                 else if (stack.Count > 0)
@@ -274,10 +278,9 @@ namespace CrawfisSoftware.PCG
                 }
             }
         }
-        public static IEnumerable<int> SpanCombiner(int width, int currentRow, int start, OutflowState startState, int end, OutflowState endState)
+        public static IEnumerable<int> SpanCombiner(int currentRow, int start, OutflowState startState, int end, OutflowState endState)
         {
             int rowPattern = currentRow;
-            int shiftAmount = width - end - 1;
             foreach(int spanPattern in new SpanEnumeration(0, startState, end-start, endState))
             {
                 yield return (spanPattern << start) | rowPattern;
