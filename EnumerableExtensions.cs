@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace CrawfisSoftware.PCG
 {
+    /// <summary>
+    /// Static helper class for enumerables
+    /// </summary>
     public static class EnumerableExtensions
     {
         /// <summary>

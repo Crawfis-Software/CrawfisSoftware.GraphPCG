@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace CrawfisSoftware.PCG
 {
+    /// <summary>
+    /// Create a path using the Path enumerator logic
+    /// </summary>
     public class PathGenerator
     {
         private const int maxDefaultAttempts = 10000;
@@ -10,13 +13,30 @@ namespace CrawfisSoftware.PCG
         private readonly int height;
         private readonly Random random;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="width">The width of the underlying grid</param>
+        /// <param name="height">The height of the underlying grid</param>
+        /// <param name="random">A random number generator</param>
+        /// <remarks>Width must be less than 32.</remarks>
         public PathGenerator(int width, int height, System.Random random)
         {
+            if (width > 31)
+                throw new ArgumentOutOfRangeException("Width must be less than 32");
             this.width = width;
             this.height = height;
             this.random = random;
-            RowEnumerator.BuildOddTables(width);
+            ValidPathRowEnumerator.BuildOddTables(width);
         }
+
+        /// <summary>
+        /// Generate a random path from the bottom edge to the top edge
+        /// </summary>
+        /// <param name="start">The column index of the starting cell</param>
+        /// <param name="end">The column index of the ending cell</param>
+        /// <param name="verticalPaths">A bit pattern of each row that represents the vertical edges of the path</param>
+        /// <param name="horizontalPaths">A bit pattern of each row that represents the horizontal edges of the path</param>
         public void GenerateRandomPath(int start, int end, out IList<int> verticalPaths, out IList<int> horizontalPaths)
         {
             // Build row tables for efficiency (if width < 16)
@@ -88,7 +108,7 @@ namespace CrawfisSoftware.PCG
 
         private bool TryGetValidRow(int previousRow, IList<IList<int>> componentsGrid, int index, out int nextRow, out int horizontalSpans, int inFlowMask, int outFlowMask)
         {
-            var rowCandidates = RowEnumerator.CandidateRows(width, previousRow);
+            var rowCandidates = ValidPathRowEnumerator.CandidateRows(width, previousRow);
             nextRow = 0;
             horizontalSpans = 0;
             if (rowCandidates.Count == 0)
@@ -115,11 +135,11 @@ namespace CrawfisSoftware.PCG
         {
 
             horizontalSpans = 0;
-            nextRow = RowEnumerator.GetRandomRow(width, previousRow, random);
+            nextRow = ValidPathRowEnumerator.GetRandomRow(width, previousRow, random);
             int searchAttempt = 0;
             while((searchAttempt < maxNumberOfTries) && !PathEnumeration.ValidateAndUpdateComponents(previousRow, nextRow, componentsGrid, index, out horizontalSpans))
             {
-                nextRow = RowEnumerator.GetRandomRow(width, previousRow, random);
+                nextRow = ValidPathRowEnumerator.GetRandomRow(width, previousRow, random);
                 searchAttempt++;
             }
             return (searchAttempt < maxNumberOfTries);

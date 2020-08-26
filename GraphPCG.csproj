@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\GraphPCG.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -43,8 +44,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BitEnumerators.cs" />
+    <Compile Include="DungeonMazeBuilder.cs" />
     <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="LoopGenerator.cs" />
+    <Compile Include="RandomWalkMazeBuilder.cs" />
     <Compile Include="MazeWrapperFromGridBitArrays.cs" />
     <Compile Include="MergeLoops.cs" />
     <Compile Include="OutflowStates.cs" />
@@ -52,7 +55,7 @@
     <Compile Include="PathEnumerationOld.cs" />
     <Compile Include="PathGenerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RowEnumerator.cs" />
+    <Compile Include="ValidPathRowEnumerator.cs" />
     <Compile Include="SpanEnumeration.cs" />
     <Compile Include="SpanTester.cs" />
   </ItemGroup>

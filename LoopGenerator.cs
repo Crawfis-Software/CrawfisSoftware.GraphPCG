@@ -3,8 +3,11 @@ using CrawfisSoftware.Collections.Maze;
 using System.Collections.Generic;
 
 
-namespace CrawfisSoftware.PCG.Loops
+namespace CrawfisSoftware.PCG
 {
+    /// <summary>
+    /// Generate a random loop on a grid
+    /// </summary>
     public class LoopGenerator : MazeBuilderAbstract<int, int>
     {
         int[] rowValues;
@@ -14,6 +17,12 @@ namespace CrawfisSoftware.PCG.Loops
         int currentRow = 0;
         List<int> spanEndPoints = new List<int>();
         List<int> newSpanEndPoints = new List<int>();
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="width">The width of the desired maze</param>
+        /// <param name="height">The height of the desired maze</param>
         public LoopGenerator(int width, int height) : base(width, height, NodeValues, EdgeValues)
         {
             this.Width = width;
@@ -22,6 +31,7 @@ namespace CrawfisSoftware.PCG.Loops
             newRowValues = new int[width];
         }
 
+        /// <inheritdoc/>
         public override void CreateMaze(bool preserveExistingCells)
         {
             CreateBaseRow(this.RandomGenerator.Next(Width / 50) + 1);

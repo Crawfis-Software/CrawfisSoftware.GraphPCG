@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace CrawfisSoftware.PCG
 {
-    public class PathEnumerationOld : MazeBuilderAbstract<int, int>
+    internal class PathEnumerationOld : MazeBuilderAbstract<int, int>
     {
         public PathEnumerationOld(int width, int height, int start, int end) : base(width, height, NodeValues, EdgeValues)
         {

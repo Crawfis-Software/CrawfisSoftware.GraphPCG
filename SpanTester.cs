@@ -2,7 +2,7 @@
 
 namespace CrawfisSoftware.PCG
 {
-    public static class SpanTester
+    internal static class SpanTester
     {
         public static IEnumerable<int> EnumerateLLSpans(int width)
         {

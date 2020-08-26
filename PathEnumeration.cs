@@ -5,11 +5,22 @@ using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
 {
+    /// <summary>
+    /// Static class to enumerate paths
+    /// </summary>
     public static class PathEnumeration
     {
+        /// <summary>
+        /// Iterate over all non-cyclical paths from a starting cell to an ending cell on an open grid.
+        /// </summary>
+        /// <param name="width">The width of the underlying grid.</param>
+        /// <param name="height">The height of the underlying grid</param>
+        /// <param name="start">The column index of the starting cell on the first row (row 0).</param>
+        /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
+        /// <returns></returns>
         public static IEnumerable<IList<int>> AllPaths(int width, int height, int start, int end)
         {
-            RowEnumerator.BuildOddTables(width);
+            ValidPathRowEnumerator.BuildOddTables(width);
             var inFlow = new List<int>() { start };
             //var validStates = OutflowState.Up;
             //if (start > 0) validStates |= OutflowState.Left;
@@ -52,13 +63,13 @@ namespace CrawfisSoftware.PCG
             // Todo: Compute all Valid OutflowStates (using components)
             //  Loop over those calling a more constrained ValidRows.
             int inFlow = grid[index];
-            var inFlows = RowEnumerator.InflowsFromBits(width, inFlow);
+            var inFlows = ValidPathRowEnumerator.InflowsFromBits(width, inFlow);
             var inFlowComponents = new List<int>(inFlows.Count);
             for (int i = 0; i < inFlows.Count; i++)
                 inFlowComponents.Add(components[index][inFlows[i]]);
             foreach (var outFlowState in OutflowStates.DetermineOutflowStates(width, inFlows, inFlowComponents))
             {
-                foreach (int child in RowEnumerator.ValidRowsFixedFlowStates(width, inFlows, outFlowState))
+                foreach (int child in ValidPathRowEnumerator.ValidRowsFixedFlowStates(width, inFlows, outFlowState))
                 {
                     grid[index + 1] = child;
                     if (ValidateAndUpdateComponents(inFlow, child, components, index, out horizontalSpans, height - index))
@@ -74,7 +85,20 @@ namespace CrawfisSoftware.PCG
             }
             yield break;
         }
-        public static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, int index, out int horizontalSpans, int maxNestedComponents = System.Int16.MaxValue)
+
+        /// <summary>
+        /// Checks two rows to see if they are valid. If so, components from the first row are matched (or merged) and
+        /// new component numbers are created (as well as new loops). 
+        /// </summary>
+        /// <param name="inFlows">Incoming row of vertical edges</param>
+        /// <param name="outFlows">Outgoing row of vertical edges</param>
+        /// <param name="componentsGrid">The grid of component numbers for each inflow edge on each row</param>
+        /// <param name="index">The current row index</param>
+        /// <param name="horizontalSpans">A bit vector of new horizontal edges created by the component matching,
+        /// merging and creation</param>
+        /// <param name="maxNestedComponents">A constraint to check on the maximum allowed nested loops for this row.</param>
+        /// <returns>True is the outFlows row is a valid row based on the inFlows row.</returns>
+        internal static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, int index, out int horizontalSpans, int maxNestedComponents = System.Int16.MaxValue)
         {
             // Given:
             //    a = last known inflow and a matching outflow of d

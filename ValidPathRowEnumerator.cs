@@ -5,7 +5,10 @@ using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
 {
-    public static class RowEnumerator
+    /// <summary>
+    /// Static class used to enumerate rows with an inFlow constraint.
+    /// </summary>
+    public static class ValidPathRowEnumerator
     {
         private static IList<IList<short>> preComputedRowTables;
         private static int tableWidth;
@@ -15,6 +18,11 @@ namespace CrawfisSoftware.PCG
                 return preComputedRowTables[row];
             return null;
         }
+
+        /// <summary>
+        /// Create pre-computed tables for paths, which have an odd number of inflows.
+        /// </summary>
+        /// <param name="width">The width of the row</param>
         public static void BuildOddTables(int width = 12)
         {
             if (width > 16)
@@ -40,13 +48,17 @@ namespace CrawfisSoftware.PCG
         {
             var validRows = new List<short>();
             //var inFlows = InflowsFromBits(width, row);
-            foreach (int child in RowEnumerator.ValidRows(width, row))
+            foreach (int child in ValidPathRowEnumerator.ValidRows(width, row))
             {
                 validRows.Add((short)child);
             }
             preComputedRowTables[row] = validRows;
         }
 
+        /// <summary>
+        /// Create pre-computed tables for loops, which have an even number of inflows.
+        /// </summary>
+        /// <param name="width">The width of the row</param>
         public static void BuildEvenTables(int width = 12)
         {
             if (width > 16)
@@ -68,6 +80,13 @@ namespace CrawfisSoftware.PCG
             Task.WaitAll(Task.WhenAll(taskList));
         }
 
+        /// <summary>
+        /// Get a random row that is a valid result with the given inflows.
+        /// </summary>
+        /// <param name="width">The width of the row</param>
+        /// <param name="inFlows">A bit pattern of the inflows in the row</param>
+        /// <param name="random">A random number generator</param>
+        /// <returns></returns>
         public static int GetRandomRow(int width, int inFlows, System.Random random)
         {
             if (preComputedRowTables == null)
@@ -75,7 +94,7 @@ namespace CrawfisSoftware.PCG
             var rowList = RowList(width, inFlows);
             if (rowList == null)
             {
-                throw new ArgumentException("The number of inFlows (bits in the inFlows variable) is not odd, or width is too large");
+                throw new ArgumentException("The number of inFlows (bits in the inFlows variable) is not correct, or width is too large");
             }
             int count = rowList.Count;
             int randomIndex = random.Next(0, count);
@@ -93,6 +112,13 @@ namespace CrawfisSoftware.PCG
             }
             return rowList;
         }
+
+        /// <summary>
+        /// Iterate over all valid rows given the rows inflows
+        /// </summary>
+        /// <param name="width">The width of the row</param>
+        /// <param name="inFlows">A bit pattern of the inflows in the row</param>
+        /// <returns></returns>
         public static IEnumerable<int> ValidRows(int width, int inFlows)
         {
             // Find all possible merges.
@@ -122,6 +148,12 @@ namespace CrawfisSoftware.PCG
             }
         }
 
+        /// <summary>
+        /// Returns the column indices of the inflows of a row
+        /// </summary>
+        /// <param name="width">The width of the row</param>
+        /// <param name="row">The inflow bit pattern</param>
+        /// <returns></returns>
         public static List<int> InflowsFromBits(int width, int row)
         {
             var inFlows = new List<int>();
@@ -138,7 +170,7 @@ namespace CrawfisSoftware.PCG
             return inFlows;
         }
 
-        public static IEnumerable<List<OutflowState>> MergeComponents(int startIndex, int endIndex, IList<int> inFlows, List<OutflowState> rowState)
+        internal static IEnumerable<List<OutflowState>> MergeComponents(int startIndex, int endIndex, IList<int> inFlows, List<OutflowState> rowState)
         {
             if ((endIndex - startIndex) < 2)
                 yield break;
@@ -192,14 +224,14 @@ namespace CrawfisSoftware.PCG
         //    }
         //}
 
-        /// <summary>
-        /// Enumerate all rows that have the desired inflows and outflow states (left, up, right). All merges
-        /// are marked with states dead-goes-right and dead-goes-left.
-        /// </summary>
-        /// <param name="width"></param>
-        /// <param name="positions"></param>
-        /// <param name="possibleOutflowStates"></param>
-        /// <returns></returns>
+        ///// <summary>
+        ///// Enumerate all rows that have the desired inflows and outflow states (left, up, right). All merges
+        ///// are marked with states dead-goes-right and dead-goes-left.
+        ///// </summary>
+        ///// <param name="width"></param>
+        ///// <param name="positions"></param>
+        ///// <param name="possibleOutflowStates"></param>
+        ///// <returns></returns>
         //public static IEnumerable<int> ValidRows(int width, List<int> positions, List<OutflowState> possibleOutflowStates)
         //{
         //    // Another set cross product problem {a,b,c,d} U {e,f} -> ae, af, be, bf, ... de. 
@@ -224,7 +256,7 @@ namespace CrawfisSoftware.PCG
         //    yield break;
         //}
 
-        public static IEnumerable<int> ValidRowsFixedFlowStates(int width, List<int> positions, IEnumerable<OutflowState> desiredOutflowState)
+        internal static IEnumerable<int> ValidRowsFixedFlowStates(int width, List<int> positions, IEnumerable<OutflowState> desiredOutflowState)
         {
             // This is basically a depth-first tree traversal of the possible spans
             // going from left-to-right (down the tree). Foreach first span there
@@ -278,7 +310,7 @@ namespace CrawfisSoftware.PCG
                 }
             }
         }
-        public static IEnumerable<int> SpanCombiner(int currentRow, int start, OutflowState startState, int end, OutflowState endState)
+        internal static IEnumerable<int> SpanCombiner(int currentRow, int start, OutflowState startState, int end, OutflowState endState)
         {
             int rowPattern = currentRow;
             foreach(int spanPattern in new SpanEnumeration(0, startState, end-start, endState))

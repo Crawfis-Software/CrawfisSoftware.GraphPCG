@@ -4,8 +4,11 @@ using System.Linq;
 
 namespace CrawfisSoftware.PCG
 {
+    /// <summary>
+    /// Enum of possible directions an inflow can go.
+    /// </summary>
     [Flags]
-    public enum OutflowState { Left = 1, Right = 2, Up = 4, DeadGoesLeft = 8, DeadGoesRight = 16 };
+    internal enum OutflowState { Left = 1, Right = 2, Up = 4, DeadGoesLeft = 8, DeadGoesRight = 16 };
 
     internal class OutflowStates
     {
@@ -47,7 +50,7 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         /// <param name="width"></param>
         /// <param name="positions"></param>
-        /// <param name="possibleOutflowStates"></param>
+        /// <param name="components">List of component numbers for each position.</param>
         /// <returns></returns>
         public static IEnumerable<IEnumerable<OutflowState>> DetermineOutflowStates(int width, List<int> positions, List<int> components)
         {
@@ -66,7 +69,6 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         /// <param name="width"></param>
         /// <param name="positions"></param>
-        /// <param name="possibleOutflowStates"></param>
         /// <returns></returns>
         public static IEnumerable<IList<OutflowState>> DetermineOutflowStates(int width, List<int> positions)
         {
