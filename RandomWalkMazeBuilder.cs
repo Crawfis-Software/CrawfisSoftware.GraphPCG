@@ -53,6 +53,14 @@ namespace CrawfisSoftware.PCG
                 return lastMove;
             }
         }
+
+        private int numberOfCarvedPassages = 0;
+        private int numberOfSteps = 0;
+        private float ChanceNewWalker { get; set; } = 0.8f;
+        private List<Walker> walkers;
+        private bool preserveExistingCells = false;
+        private int numberOfNewPassages;
+
         /// <summary>
         /// The main control parameter for the algorithm. Specifies new passages to open (carve).
         /// A value of zero provides no carving.
@@ -60,12 +68,13 @@ namespace CrawfisSoftware.PCG
         /// Note: If carving a partial maze already, this parameter is for any new carvings.
         /// </summary>
         public float PercentToCarve { get; set; } = 0.6f;
-        private int numberOfNewPassages;
+
         /// <summary>
         /// A safety parameter or a useful control parameter. The algorithm stops after
         /// MazWalkingDistance steps.
         /// </summary>
         public int MaxWalkingDistance { get; set; } = 1000000;
+
         /// <summary>
         /// The number of walkers to spawn (eventually). New walkers can be spawned
         /// at random locations during initialization or at an existing walker's
@@ -76,17 +85,14 @@ namespace CrawfisSoftware.PCG
         /// The number of initial walkers to spawn. Each walker will start at a random location.
         /// </summary>
         public int InitialNumberOfWalkers { get; set; } = 1;
+
         /// <summary>
         /// If favorForwardCarving is true. A walker is more likely to walk in a straight line.
         /// This moves the walker further around the room. Setting to false provides less
         /// exploration of the grid and carves out a more open area.
         /// </summary>
         public bool favorForwardCarving { get; set; }
-        private int numberOfCarvedPassages = 0;
-        private int numberOfSteps = 0;
-        private float ChanceNewWalker { get; set; } = 0.8f;
-        private List<Walker> walkers;
-        private bool preserveExistingCells = false;
+
         /// <summary>
         /// Constructor. All of the parameters are the same as the grid data type.
         /// </summary>
@@ -100,6 +106,15 @@ namespace CrawfisSoftware.PCG
             : base(width, height, nodeAccessor, edgeAccessor)
         {
         }
+
+        /// <summary>
+        /// Constructor, Takes an existing maze builder (derived from MazeBuilderAbstract) and copies the state over.
+        /// </summary>
+        /// <param name="mazeBuilder">A maze builder</param>
+        public RandomWalkMazeBuilder(MazeBuilderAbstract<N, E> mazeBuilder) : base(mazeBuilder)
+        {
+        }
+
         /// <summary>
         /// Main method where the algorithm is performed.
         /// Note: This could be called many times with all but the 
