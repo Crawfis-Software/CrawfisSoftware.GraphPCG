@@ -8,7 +8,7 @@ namespace CrawfisSoftware.PCG
     /// <summary>
     /// Generate a random loop on a grid
     /// </summary>
-    public class LoopGenerator : MazeBuilderAbstract<int, int>
+    internal class LoopGenerator : MazeBuilderAbstract<int, int>
     {
         int[] rowValues;
         int[] newRowValues;

@@ -127,10 +127,6 @@ namespace CrawfisSoftware.PCG
         {
             numberOfCarvedPassages = 0;
             numberOfSteps = 0;
-            if (!preserveExistingCells)
-            {
-                Clear();
-            }
             numberOfNewPassages = (int)(PercentToCarve * grid.NumberOfEdges);
             this.preserveExistingCells = preserveExistingCells;
             InitializeWalkers();

@@ -47,6 +47,7 @@
     <Compile Include="DungeonMazeBuilder.cs" />
     <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="LoopGenerator.cs" />
+    <Compile Include="PathGeneratorSideWinder.cs" />
     <Compile Include="RandomWalkMazeBuilder.cs" />
     <Compile Include="MazeWrapperFromGridBitArrays.cs" />
     <Compile Include="MergeLoops.cs" />

@@ -64,10 +64,10 @@ namespace CrawfisSoftware.PCG
         /// <inheritdoc/>
         public override void CreateMaze(bool preserveExistingCells)
         {
-            if (!preserveExistingCells)
-            {
-                Clear();
-            }
+            //if (!preserveExistingCells)
+            //{
+            //    Clear();
+            //}
             MakeRooms();
             MakePassages();
         }
