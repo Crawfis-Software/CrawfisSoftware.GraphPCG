@@ -8,15 +8,27 @@ using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class PathGeneratorSideWinder : MazeBuilderAbstract<int, int>
     {
-        public PathGeneratorSideWinder(int width, int height, GetGridLabel<int> nodeAccessor, GetEdgeLabel<int> edgeAccessor) : base(width, height, nodeAccessor, edgeAccessor)
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="width">The width of the desired maze</param>
+        /// <param name="height">The height of the desired maze</param>
+        /// <param name="nodeAccessor">A function to retrieve any node labels</param>
+        /// <param name="edgeAccessor">A function to retrieve any edge weights</param>
+        public PathGeneratorSideWinder(int width, int height, GetGridLabel<int> nodeAccessor = null, GetEdgeLabel<int> edgeAccessor = null)
+            : base(width, height, nodeAccessor, edgeAccessor)
         {
         }
 
+        /// <inheritdoc/>
         public override void CreateMaze(bool preserveExistingCells = false)
         {
-            int lastColumn = 0;
+            int lastColumn = StartCell % Width;
             for(int row = 0; row < (Height-1); row++)
             {
                 int column = RandomGenerator.Next(Width);
