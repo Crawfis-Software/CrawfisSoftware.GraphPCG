@@ -102,7 +102,7 @@ namespace CrawfisSoftware.PCG
         /// a node's label when queried.</param>
         /// <param name="edgeAccessor">A GetEdgeLabel delegate instance used to determine
         /// a edge's label when queried.</param>
-        public RandomWalkMazeBuilder(int width, int height, GetGridLabel<N> nodeAccessor, GetEdgeLabel<E> edgeAccessor)
+        public RandomWalkMazeBuilder(int width, int height, GetGridLabel<N> nodeAccessor = null, GetEdgeLabel<E> edgeAccessor = null)
             : base(width, height, nodeAccessor, edgeAccessor)
         {
         }

@@ -46,7 +46,7 @@
     <Compile Include="BitEnumerators.cs" />
     <Compile Include="DungeonMazeBuilder.cs" />
     <Compile Include="EnumerableExtensions.cs" />
-    <Compile Include="LoopGenerator.cs" />
+    <Compile Include="LoopGeneratorSideWinder.cs" />
     <Compile Include="PathGeneratorSideWinder.cs" />
     <Compile Include="RandomWalkMazeBuilder.cs" />
     <Compile Include="MazeWrapperFromGridBitArrays.cs" />

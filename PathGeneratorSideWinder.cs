@@ -9,10 +9,29 @@ using System.Threading.Tasks;
 namespace CrawfisSoftware.PCG
 {
     /// <summary>
-    /// 
+    /// Generate a path from the start column on the bottom row to the end column
+    /// on the top row.
     /// </summary>
     public class PathGeneratorSideWinder : MazeBuilderAbstract<int, int>
     {
+        public int MaxSpanWidth { get; set; } = 5;
+        public Func<int, int, int> PickNextColumn { get; set; } = DefaultPickNextColumnFunc;
+
+        private static int DefaultPickNextColumnFunc(int row, int previousColumn)
+        {
+            return 5;
+        }
+
+        private int stepSize = 2;
+        private int stepDirection = 1;
+        private int PickNextColumnWaveFunc(int row, int previousColumn)
+        {
+            if (previousColumn > (Width - stepSize)) stepDirection = (stepDirection > 0) ? -stepDirection : stepDirection;
+            if (previousColumn < stepSize) stepDirection = (stepDirection < 0) ? -stepDirection : stepDirection;
+            int step = (RandomGenerator.Next(stepSize)) * stepDirection;
+            return previousColumn + step;
+        }
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -23,6 +42,7 @@ namespace CrawfisSoftware.PCG
         public PathGeneratorSideWinder(int width, int height, GetGridLabel<int> nodeAccessor = null, GetEdgeLabel<int> edgeAccessor = null)
             : base(width, height, nodeAccessor, edgeAccessor)
         {
+            this.PickNextColumn = PickNextColumnWaveFunc;
         }
 
         /// <inheritdoc/>
@@ -31,7 +51,10 @@ namespace CrawfisSoftware.PCG
             int lastColumn = StartCell % Width;
             for(int row = 0; row < (Height-1); row++)
             {
-                int column = RandomGenerator.Next(Width);
+                //int column = RandomGenerator.Next(Width);
+                int column = PickNextColumn(row, lastColumn);
+                column = (column < 0) ? 0 : column;
+                column = (column >= Width) ? Width - 1 : column;
                 CarveDirectionally(column, row, Direction.N, preserveExistingCells);
                 lastColumn = CarveSpan(row, lastColumn, column, preserveExistingCells);
             }

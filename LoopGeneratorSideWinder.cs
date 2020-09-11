@@ -6,10 +6,19 @@ using System.Collections.Generic;
 namespace CrawfisSoftware.PCG
 {
     /// <summary>
-    /// Generate a random loop on a grid
+    /// Generate a random loop on a grid that consists of two paths that merge at
+    /// the bottom row and top row.
     /// </summary>
-    internal class LoopGenerator : MazeBuilderAbstract<int, int>
+    public class LoopGeneratorSideWinder : MazeBuilderAbstract<int, int>
     {
+        // Todo: Add Properties or functions for:
+        //    min and max horizontal span width
+        //        - per row? 
+        //        - per left  versus per right
+        //    Initial row span
+        //    Max left edge per row (could be zero to force to edge)
+        //    Min right edge per row (could be Width-1 to force to edge)
+        //    Bool on whether to allow "overlap" between rows (or int for minimum spread)
         int[] rowValues;
         int[] newRowValues;
         int currentNumberOfComponents = 0;
@@ -23,7 +32,7 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         /// <param name="width">The width of the desired maze</param>
         /// <param name="height">The height of the desired maze</param>
-        public LoopGenerator(int width, int height) : base(width, height, NodeValues, EdgeValues)
+        public LoopGeneratorSideWinder(int width, int height) : base(width, height)
         {
             this.Width = width;
             this.Height = height;
@@ -34,12 +43,12 @@ namespace CrawfisSoftware.PCG
         /// <inheritdoc/>
         public override void CreateMaze(bool preserveExistingCells)
         {
-            CreateBaseRow(this.RandomGenerator.Next(Width / 50) + 1);
+            CreateBaseRow(1);
             currentNewComponentNumber = currentNumberOfComponents;
             for (int row = 1; row < Height - 1; row++)
             {
                 currentRow++;
-                CreateNextRow(this.RandomGenerator.Next(Width / 3));
+                CreateNextRow(2);
                 int[] tempSwapArray = rowValues;
                 rowValues = newRowValues;
                 newRowValues = tempSwapArray;
@@ -106,13 +115,14 @@ namespace CrawfisSoftware.PCG
                 //}
                 //if(rowValues[start] == componentToTryToRemove)
                 //{
-                //    // Component logic is broken here. While try to fix later.
+                //    // Component logic is broken here. Will try to fix later.
                 //    lastEnd = next;
                 //    i++;
                 //    continue;
                 //}
                 // Pick a random location to move up for start.
                 int spanWidth = next - lastEnd - 2;
+                spanWidth = spanWidth > 0 ? spanWidth : 0;
                 int newConnection = this.RandomGenerator.Next(spanWidth) + lastEnd + 1;
                 newSpanEndPoints.Add(newConnection);
                 int component = rowValues[start];
@@ -136,31 +146,6 @@ namespace CrawfisSoftware.PCG
                         lastEnd = start;
                     }
                 }
-                // Pick a random location to move up for end.
-                //spanWidth = next - lastEnd - 2;
-                //newConnection = this.RandomGenerator.Next(spanWidth) + lastEnd + 1;
-                //newSpanEndPoints.Add(newConnection);
-                //component = rowValues[next];
-                //newRowValues[newConnection] = component;
-                //CarvePassage(newConnection+ currentRow*width, newConnection + width)+ currentRow*width;
-                //if (newConnection > start)
-                //{
-                //    for (int cell = start; cell < newConnection; cell++)
-                //    {
-                //        CarvePassage(cell+ currentRow*width, cell + 1+ currentRow*width);
-                //        newRowValues[cell] = component;
-                //        lastEnd = newConnection;
-                //    }
-                //}
-                //else
-                //{
-                //    for (int cell = newConnection; cell < start; cell++)
-                //    {
-                //        CarvePassage(cell+ currentRow*width, cell + 1+ currentRow*width);
-                //        newRowValues[cell] = component;
-                //        lastEnd = newConnection;
-                //    }
-                //}
             }
         }
 
@@ -187,15 +172,6 @@ namespace CrawfisSoftware.PCG
                 return newSpanEnd;
             }
             return start - 1;
-        }
-
-        private static int NodeValues(int i, int j)
-        {
-            return 1;
-        }
-        private static int EdgeValues(int i, int j, Direction dir)
-        {
-            return 1;
         }
     }
 }
