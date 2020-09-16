@@ -42,9 +42,14 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         public int MaxRoomSize { get; set; } = 8;
 
+        /// <summary>
+        /// Get or set the outside wall buffer size
+        /// </summary>
+        public int RoomMoatSize { get; set; } = 1;
+
         private List<Room> roomList = new List<Room>();
-        private int minRoomDistance = 2;
-        private int maxNumberOfTrys = 100000;
+        //private int minRoomDistance = 2;
+        private int maxNumberOfTrys = 10000000;
 
 
         /// <summary>
@@ -62,17 +67,21 @@ namespace CrawfisSoftware.PCG
         /// <inheritdoc/>
         public override void CreateMaze(bool preserveExistingCells)
         {
-            //if (!preserveExistingCells)
-            //{
-            //    Clear();
-            //}
             MakeRooms();
             MakePassages();
         }
 
         private void MakePassages()
         {
-            //throw new NotImplementedException();
+            for(int i=1; i < roomList.Count; i ++)
+            {
+                int room1CenterX = roomList[i - 1].minX + roomList[i - 1].width / 2;
+                int room1CenterY = roomList[i - 1].minY + roomList[i - 1].height / 2;
+                int room2CenterX = roomList[i].minX + roomList[i].width / 2;
+                int room2CenterY = roomList[i].minY + roomList[i].height / 2;
+                CarveHorizontalSpan(room1CenterY, room1CenterX, room2CenterX, false);
+                CarveVerticalSpan(room2CenterX, room1CenterY, room2CenterY, false);
+            }
         }
 
         private void MakeRooms()
@@ -86,7 +95,7 @@ namespace CrawfisSoftware.PCG
 
                 MakeRoom(lowerLeftIndex, upperRightIndex);
             }
-            MoveRoomsToCircle();
+            //MoveRoomsToCircle();
         }
 
         private void MakeRoom(int lowerLeftIndex, int upperRightIndex)
@@ -123,37 +132,38 @@ namespace CrawfisSoftware.PCG
         private void CreateRandomRooms()
         {
             int deltaWidth = MaxRoomSize - MinRoomSize + 1;
-            int minimumXCoord = Width - MaxRoomSize;
-            int minumumYCoord = Height - MaxRoomSize;
             // Random create rooms
             int roomTrys = 0;
             while (roomList.Count < this.NumberOfRooms && roomTrys < maxNumberOfTrys)
             {
                 int roomWidth = MinRoomSize + RandomGenerator.Next(deltaWidth);
                 int roomHeight = MinRoomSize + RandomGenerator.Next(deltaWidth);
+                int minimumXCoord = Width - roomWidth;
+                int minumumYCoord = Height - roomHeight;
                 int minX = RandomGenerator.Next(minimumXCoord);
                 int minY = RandomGenerator.Next(minumumYCoord);
                 Room room = new Room(minX, minY, roomWidth, roomHeight);
                 roomTrys++;
                 // Ensure they are minRoomDistance apart.
                 int minDistance = Width + Height;
+                bool canPlace = true;
                 foreach (Room placedRoom in roomList)
                 {
                     int distance = RoomDistance(placedRoom, room);
-                    if (distance < minRoomDistance)
+                    if (distance < RoomMoatSize)
                     {
-                        // Move Room
-                        minDistance = distance;
+                        canPlace = false;
+                        break;
                     }
                 }
-                //if (minDistance > minRoomDistance)
+                if (canPlace)
                 {
                     roomList.Add(room);
                 }
             }
         }
 
-        private void MoveRoomsForceImpule()
+        private void MoveRoomsForceImpulse()
         {
 
         }
@@ -182,14 +192,6 @@ namespace CrawfisSoftware.PCG
             }
             roomList = newList;
         }
-        //public static Room NodeValues(int i, int j)
-        //{
-        //    return null;
-        //}
-        //public static int EdgeValues(int i, int j, Direction dir)
-        //{
-        //    return 1;
-        //}
 
         private static int RoomDistance(Room room1, Room room2)
         {
@@ -197,7 +199,7 @@ namespace CrawfisSoftware.PCG
             int yDistance = 0;
             int x1 = room1.minX;
             int x2 = x1 + room1.width;
-            int y1 = room2.minY;
+            int y1 = room1.minY;
             int y2 = y1 + room1.height;
             int u1 = room2.minX;
             int u2 = u1 + room2.width;

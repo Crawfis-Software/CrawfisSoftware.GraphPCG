@@ -14,22 +14,26 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     public class PathGeneratorSideWinder : MazeBuilderAbstract<int, int>
     {
+        /// <summary>
+        /// Get or set the maximum horizontal passage length used in the default
+        /// PickNextColumn function.
+        /// </summary>
         public int MaxSpanWidth { get; set; } = 5;
-        public Func<int, int, int> PickNextColumn { get; set; } = DefaultPickNextColumnFunc;
 
-        private static int DefaultPickNextColumnFunc(int row, int previousColumn)
-        {
-            return 5;
-        }
+        /// <summary>
+        /// Get or set the a function to determine on a per row basis the exact column
+        /// the curve should shift over to. Defaults to a random column to the left or
+        /// right of the previous column at most MaxSpanWidth away.
+        /// </summary>
+        public Func<int, int, int> PickNextColumn { get; set; }
 
-        private int stepSize = 2;
-        private int stepDirection = 1;
-        private int PickNextColumnWaveFunc(int row, int previousColumn)
+        private int DefaultPickNextColumnFunc(int row, int previousColumn)
         {
-            if (previousColumn > (Width - stepSize)) stepDirection = (stepDirection > 0) ? -stepDirection : stepDirection;
-            if (previousColumn < stepSize) stepDirection = (stepDirection < 0) ? -stepDirection : stepDirection;
-            int step = (RandomGenerator.Next(stepSize)) * stepDirection;
-            return previousColumn + step;
+            int delta = RandomGenerator.Next(Width) - previousColumn;
+            int sign = 1;
+            if (delta < 0) sign = -1;
+            delta = ((sign*delta) > MaxSpanWidth) ? sign*MaxSpanWidth : delta;
+            return previousColumn + delta;
         }
 
         /// <summary>
@@ -42,7 +46,7 @@ namespace CrawfisSoftware.PCG
         public PathGeneratorSideWinder(int width, int height, GetGridLabel<int> nodeAccessor = null, GetEdgeLabel<int> edgeAccessor = null)
             : base(width, height, nodeAccessor, edgeAccessor)
         {
-            this.PickNextColumn = PickNextColumnWaveFunc;
+            this.PickNextColumn = DefaultPickNextColumnFunc;
         }
 
         /// <inheritdoc/>
@@ -56,27 +60,10 @@ namespace CrawfisSoftware.PCG
                 column = (column < 0) ? 0 : column;
                 column = (column >= Width) ? Width - 1 : column;
                 CarveDirectionally(column, row, Direction.N, preserveExistingCells);
-                lastColumn = CarveSpan(row, lastColumn, column, preserveExistingCells);
+                CarveHorizontalSpan(row, lastColumn, column, preserveExistingCells);
+                lastColumn = column;
             }
-            CarveSpan(Height - 1, lastColumn, Width - 1, preserveExistingCells);
-        }
-
-        private int CarveSpan(int row, int lastColumn, int column, bool preserveExistingCells)
-        {
-            int start = column;
-            int end = lastColumn;
-            lastColumn = column;
-            if (start > end)
-            {
-                start = end;
-                end = column;
-            }
-            for (int i = start; i < end; i++)
-            {
-                CarveDirectionally(i, row, Direction.E, preserveExistingCells);
-            }
-
-            return lastColumn;
+            CarveHorizontalSpan(Height - 1, lastColumn, Width - 1, preserveExistingCells);
         }
     }
 }
