@@ -27,6 +27,8 @@ namespace CrawfisSoftware.PCG
             }
         }
 
+        private List<Room> roomList = new List<Room>();
+
         /// <summary>
         /// Get or set the number of rooms to create
         /// </summary>
@@ -47,10 +49,15 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         public int RoomMoatSize { get; set; } = 1;
 
-        private List<Room> roomList = new List<Room>();
-        //private int minRoomDistance = 2;
-        private int maxNumberOfTrys = 10000000;
+        /// <summary>
+        /// Get or set whether the algorithm should add passages between various rooms
+        /// </summary>
+        public bool CreatePassages { get; set; } = true;
 
+        /// <summary>
+        /// Get or set the maximum number of attempts to place all rooms
+        /// </summary>
+        public int MaxNumberOfTrys { get; set; } = 1000000;
 
         /// <summary>
         /// Constructor
@@ -68,7 +75,10 @@ namespace CrawfisSoftware.PCG
         public override void CreateMaze(bool preserveExistingCells)
         {
             MakeRooms();
-            MakePassages();
+            if (CreatePassages)
+            {
+                MakePassages();
+            }
         }
 
         private void MakePassages()
@@ -91,14 +101,11 @@ namespace CrawfisSoftware.PCG
             {
                 int lowerLeftIndex = room.minX + Width * room.minY;
                 int upperRightIndex = lowerLeftIndex + (room.height - 1) * Width + (room.width - 1);
-                Console.WriteLine("Creating Room {0}, {1}  to {2}, {3}", lowerLeftIndex % Width, lowerLeftIndex / Width, upperRightIndex % Width, upperRightIndex / Width);
-
-                MakeRoom(lowerLeftIndex, upperRightIndex);
+                CarveRoom(lowerLeftIndex, upperRightIndex);
             }
-            //MoveRoomsToCircle();
         }
 
-        private void MakeRoom(int lowerLeftIndex, int upperRightIndex)
+        private void CarveRoom(int lowerLeftIndex, int upperRightIndex)
         {
             int left = lowerLeftIndex % Width;
             int right = upperRightIndex % Width;
@@ -134,7 +141,7 @@ namespace CrawfisSoftware.PCG
             int deltaWidth = MaxRoomSize - MinRoomSize + 1;
             // Random create rooms
             int roomTrys = 0;
-            while (roomList.Count < this.NumberOfRooms && roomTrys < maxNumberOfTrys)
+            while (roomList.Count < this.NumberOfRooms && roomTrys < MaxNumberOfTrys)
             {
                 int roomWidth = MinRoomSize + RandomGenerator.Next(deltaWidth);
                 int roomHeight = MinRoomSize + RandomGenerator.Next(deltaWidth);
@@ -144,18 +151,7 @@ namespace CrawfisSoftware.PCG
                 int minY = RandomGenerator.Next(minumumYCoord);
                 Room room = new Room(minX, minY, roomWidth, roomHeight);
                 roomTrys++;
-                // Ensure they are minRoomDistance apart.
-                int minDistance = Width + Height;
-                bool canPlace = true;
-                foreach (Room placedRoom in roomList)
-                {
-                    int distance = RoomDistance(placedRoom, room);
-                    if (distance < RoomMoatSize)
-                    {
-                        canPlace = false;
-                        break;
-                    }
-                }
+                bool canPlace = CheckForOverlap(room);
                 if (canPlace)
                 {
                     roomList.Add(room);
@@ -163,34 +159,21 @@ namespace CrawfisSoftware.PCG
             }
         }
 
-        private void MoveRoomsForceImpulse()
+        private bool CheckForOverlap(Room room)
         {
-
-        }
-        private void MoveRoomsToCircle()
-        {
-            // Ignore Room position and only use the width and height
-            int count = roomList.Count;
-            float deltaRadians = 2.0f * (float)Math.PI / (float)count;
-            int minRadius = 3 * MaxRoomSize;
-
-            List<Room> newList = new List<Room>(roomList.Count);
-            float angle = (float) RandomGenerator.NextDouble();
-            foreach(Room room in roomList)
+            bool canPlace = true;
+            foreach (Room placedRoom in roomList)
             {
-                float deltaX = (float)Math.Cos(angle);
-                float deltaY = (float)Math.Sin(angle);
-                int xEnd = Width / 2 - room.width - 1;
-                int xStart = Math.Min(minRadius, xEnd);
-                int newX = (int)(deltaX * RandomGenerator.Next(xStart, xEnd));
-                int yEnd = Height / 2 - room.height - 1;
-                int yStart = Math.Min(minRadius, xEnd);
-                int newY = (int)(deltaY * RandomGenerator.Next(xStart, xEnd));
-                angle += deltaRadians;
-                Room newRoom = new Room(newX, newY, room.width, room.height);
-                newList.Add(newRoom);
+                int distance = RoomDistance(placedRoom, room);
+                // Ensure they are RoomMoatSize apart.
+                if (distance-RoomMoatSize < 0)
+                {
+                    canPlace = false;
+                    break;
+                }
             }
-            roomList = newList;
+
+            return canPlace;
         }
 
         private static int RoomDistance(Room room1, Room room2)
@@ -221,7 +204,13 @@ namespace CrawfisSoftware.PCG
             {
                 yDistance = y1 - v2;
             }
-            return xDistance + yDistance;
+            int distance =  xDistance + yDistance;
+            if(distance == 0)
+            {
+                // Not entirely accurate if one is completely within the other
+                distance = Math.Min(Math.Max(x1, u1) - Math.Max(x2, u2), Math.Max(y1, v1) - Math.Max(y2, v2));
+            }
+            return distance;
         }
     }
 }

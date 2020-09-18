@@ -1,0 +1,197 @@
+﻿using System;
+using System.Text;
+
+namespace CrawfisSoftware.PCG
+{
+    /// <summary>
+    /// Framework for creating false/true (0/1) grids.
+    /// </summary>
+    public class CellularAutomata
+    {
+        private bool[,] cells;
+        private readonly Random randomGenerator;
+
+        /// <summary>
+        /// Get the number of columns in the cellular automata
+        /// </summary>
+        public int Width { get; private set; }
+
+        /// <summary>
+        /// Get the number of rows in the cellular automata
+        /// </summary>
+        public int Height { get; private set; }
+
+        /// <summary>
+        /// Get or set the neighborhood radius. Default is one.
+        /// </summary>
+        public int NeighborhoodSize { get; set; } = 1;
+
+        /// <summary>
+        /// Get or set the function that takes the number of neighbors and
+        /// the number of those that are true (1) and return true or false
+        /// </summary>
+        /// <remarks>Called if the current cell is true.</remarks>
+        public Func<int, int, int, int, int, bool> AutomataForTrueCells { get; set; } = DefaultAutomataIfTrue;
+
+        /// <summary>
+        /// Get or set the function that takes the number of neighbors and
+        /// the number of those that are true (1) and return true or false
+        /// </summary>
+        /// <remarks>Called if the current cell is false.</remarks>
+        public Func<int, int, int, int, int, bool> AutomataForFalseCells { get; set; } = DefaultAutomataIfFalse;
+
+        /// <summary>
+        /// Get or set the function called before each iteration
+        /// </summary>
+        public Action<int> PreIterationFunc { get; set; } = NoOpFunc;
+
+        /// <summary>
+        /// Get or set the function called after each iteration
+        /// </summary>
+        public Action<int> PostIterationFunc { get; set; } = NoOpFunc;
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="width">The number of columns.</param>
+        /// <param name="height">The number of rows.</param>
+        /// <param name="random">A random number generator. If null, a new one will be created.</param>
+        public CellularAutomata(int width, int height, Random random = null)
+        {
+            Width = width;
+            Height = height;
+            cells = new bool[height, width];
+            randomGenerator = random;
+            if (random == null)
+                randomGenerator = new System.Random();
+        }
+
+        /// <summary>
+        /// Utility function to initialize or add noise.
+        /// </summary>
+        /// <param name="threshold">Values above this threshold will be set to true.</param>
+        public void AddNoise(float threshold = 0.5f)
+        {
+            for(int column = 0; column < Width; column++)
+            {
+                for(int row = 0; row < Height; row++)
+                {
+                    float randomValue = (float) randomGenerator.NextDouble();
+                    if(randomValue > threshold)
+                    {
+                        cells[row, column] = true;
+                    }    
+                }
+            }
+        }
+
+        /// <summary>
+        /// Apply the automata rules repeatedly.
+        /// </summary>
+        /// <param name="numberOfIterations">The number of times to apply the automata.</param>
+        public void IterateAutomata(int numberOfIterations = 1)
+        {
+            for(int iteration = 0; iteration < numberOfIterations; iteration++)
+            {
+                PreIterationFunc(iteration);
+                for (int column = 0; column < Width; column++)
+                {
+                    for (int row = 0; row < Height; row++)
+                    {
+                        int numberOfNeighbors = GetNeighborsAndCount(row, column, out int numberTrue);
+                        if(cells[row, column])
+                            cells[row, column] = AutomataForTrueCells(row, column, iteration, numberTrue, numberOfNeighbors);
+                        else
+                            cells[row, column] = AutomataForFalseCells(row, column, iteration, numberTrue, numberOfNeighbors);
+                    }
+                }
+                PostIterationFunc(iteration);
+            }
+        }
+
+        /// <summary>
+        /// Return the array (reference) of the cellular automata
+        /// </summary>
+        /// <returns></returns>
+        public bool[,] GetCells()
+        {
+            return cells;
+        }
+
+        private int GetNeighborsAndCount(int row, int column, out int numberTrue)
+        {
+            int rowMin = Math.Max(0,row-NeighborhoodSize);
+            int rowMax = Math.Min(Height - 1, row + NeighborhoodSize);
+            int ColumnMin = Math.Max(0, column - NeighborhoodSize);
+            int ColumnMax = Math.Min(Width - 1, column + NeighborhoodSize);
+            int totalCells = (rowMax - rowMin + 1) * (ColumnMax - ColumnMin + 1);
+            if (totalCells <= 0)
+                throw new ArgumentOutOfRangeException("row, column of NeighborhoodSize is wrong");
+
+            numberTrue = 0;
+            for(int rowIndex = rowMin; rowIndex <= rowMax; rowIndex++)
+            {
+                for(int columnIndex = ColumnMin; columnIndex <= ColumnMax; columnIndex++)
+                {
+                    if (columnIndex == column && rowIndex == row)
+                        continue;
+                    if (cells[rowIndex, columnIndex])
+                        numberTrue++;
+                }
+            }
+            return totalCells;
+        }
+
+        /// <summary>
+        /// Converts the Cellular Automata to an asci string representation
+        /// </summary>
+        /// <returns>A string</returns>
+        public override string ToString()
+        {
+            StringBuilder caString = new StringBuilder(Width);
+            string openCell = ".";
+            string closedCell = "#";
+            // For each row we will have two strings.
+            for (int row = Height - 1; row >= 0; row--)
+            {
+                for (int column = 0; column < Width; column++)
+                {
+                    if (cells[row, column])
+                        caString.Append(closedCell);
+                    else
+                        caString.Append(openCell);
+                }
+                caString.AppendLine();
+            }
+            return caString.ToString();
+        }
+
+        private static int defaultKeepWallThreshold = 4;
+        private static int defaultRemoveWallThreshold = 2;
+        private static int neighborsInKernel = 8;
+        private static bool DefaultAutomataIfTrue(int row, int column, int iteration, int numberTrue, int numberOfNeighbors)
+        {
+            if (numberOfNeighbors < neighborsInKernel) // Valid for neighborhood size of 1
+                return true; // Wall at all edges
+            if (numberTrue >= defaultKeepWallThreshold)
+                return true;
+            if (numberTrue < defaultRemoveWallThreshold)
+                return false;
+            return true; // Keep cell as is
+        }
+
+        private static int defaultTurnIntoWallThreshold = 5;
+        private static bool DefaultAutomataIfFalse(int row, int column, int iteration, int numberTrue, int numberOfNeighbors)
+        {
+            if (numberOfNeighbors < neighborsInKernel)
+                return true;
+            if (numberTrue >= defaultTurnIntoWallThreshold)
+                return true;
+            return false;
+        }
+
+        private static void NoOpFunc(int iteration)
+        {
+        }
+    }
+}
