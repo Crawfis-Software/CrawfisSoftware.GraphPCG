@@ -63,6 +63,14 @@
     <Compile Include="SpanTester.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Graph\BasicGraphs\BasicGraphs.csproj">
+      <Project>{297cccfb-3fff-4b26-a9fc-8eb5233b4ef4}</Project>
+      <Name>BasicGraphs</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Graph\Graph\Graph.csproj">
+      <Project>{cda73d23-fac2-4050-bf14-4044c245ea10}</Project>
+      <Name>Graph</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Graph\Grid\Grid.csproj">
       <Project>{91a2299b-8502-4e69-a9af-97cb7295e78c}</Project>
       <Name>Grid</Name>

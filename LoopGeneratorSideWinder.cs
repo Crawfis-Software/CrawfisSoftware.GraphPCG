@@ -11,6 +11,8 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     public class LoopGeneratorSideWinder : MazeBuilderAbstract<int, int>
     {
+        // Todo: rewrite folloing the structure of PathGeneratorSidewinder. This could was trying 
+        //   to make more general paths and has been replaced with PathGenerator.
         // Todo: Add Properties or functions for:
         //    min and max horizontal span width
         //        - per row? 
