@@ -25,15 +25,33 @@ namespace CrawfisSoftware.PCG
         /// the curve should shift over to. Defaults to a random column to the left or
         /// right of the previous column at most MaxSpanWidth away.
         /// </summary>
-        public Func<int, int, int> PickNextColumn { get; set; }
+        public Func<int, int, System.Random, int> PickNextColumn { get; set; }
 
-        private int DefaultPickNextColumnFunc(int row, int previousColumn)
+        /// <summary>
+        /// Get or set the a function to determine on a per row basis the exact row
+        /// the curve should move to after the span for that row is completed. Defaults
+        /// to the next row (returns row+1).
+        /// </summary>
+        public Func<int, int, System.Random, int> PickNextRow { get; set; }
+
+        private int DefaultPickNextColumnFunc(int row, int previousColumn, System.Random randomGenerator = null)
         {
             int delta = RandomGenerator.Next(Width) - previousColumn;
             int sign = 1;
             if (delta < 0) sign = -1;
-            delta = ((sign*delta) > MaxSpanWidth) ? sign*MaxSpanWidth : delta;
+            delta = ((sign * delta) > MaxSpanWidth) ? sign * MaxSpanWidth : delta;
             return previousColumn + delta;
+        }
+
+        private bool first = true;
+        private int DefaultPickNextRowFunc(int row, int previousColumn, System.Random randomGenerator = null)
+        {
+            if(first && row == 12)
+            {
+                first = false;
+                return 2;
+            }
+            return row+3;
         }
 
         /// <summary>
@@ -47,23 +65,29 @@ namespace CrawfisSoftware.PCG
             : base(width, height, nodeAccessor, edgeAccessor)
         {
             this.PickNextColumn = DefaultPickNextColumnFunc;
+            this.PickNextRow = DefaultPickNextRowFunc;
         }
 
         /// <inheritdoc/>
         public override void CreateMaze(bool preserveExistingCells = false)
         {
             int lastColumn = StartCell % Width;
-            for(int row = 0; row < (Height-1); row++)
+            int row = 0;
+            while ( row < (Height-1))
             {
                 //int column = RandomGenerator.Next(Width);
-                int column = PickNextColumn(row, lastColumn);
+                int column = PickNextColumn(row, lastColumn, RandomGenerator);
                 column = (column < 0) ? 0 : column;
                 column = (column >= Width) ? Width - 1 : column;
-                CarveDirectionally(column, row, Direction.N, preserveExistingCells);
+                //CarveDirectionally(column, row, Direction.N, preserveExistingCells);
                 CarveHorizontalSpan(row, lastColumn, column, preserveExistingCells);
                 lastColumn = column;
+                int nextRow = PickNextRow(row, column, RandomGenerator);
+                CarveVerticalSpan(column, row, nextRow, preserveExistingCells);
+                row = nextRow;
             }
-            CarveHorizontalSpan(Height - 1, lastColumn, Width - 1, preserveExistingCells);
+            int exitColumn = EndCell % Width;
+            CarveHorizontalSpan(Height - 1, lastColumn, exitColumn, preserveExistingCells);
         }
     }
 }
