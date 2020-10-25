@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" GroupingSetting="Access" MembersFormat="NameAndType">
+  <Class Name="CrawfisSoftware.PCG.BitEnumerators">
+    <Position X="2.25" Y="0.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AABACAAAEAAAAAAAIAAAAAAAAAAAAIAAAAAAAiAAAAA=</HashCode>
+      <FileName>BitEnumerators.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CrawfisSoftware.PCG.EnumerableExtensions">
+    <Position X="8" Y="5.25" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AACAAAAAAEAAAAAAAAAACAAAAAAAAQAAAAAAAAABAAA=</HashCode>
+      <FileName>EnumerableExtensions.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CrawfisSoftware.PCG.MazeWrapperFromGridBitArrays">
+    <Position X="13" Y="5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>MazeWrapperFromGridBitArrays.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CrawfisSoftware.PCG.MergeLoops" Collapsed="true">
+    <Position X="3.75" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAEAAAAAAQAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>MergeLoops.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CrawfisSoftware.PCG.OutflowStates">
+    <Position X="0.5" Y="4" Width="5.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQCAAEAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>OutflowStates.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CrawfisSoftware.PCG.PathEnumeration">
+    <Position X="13" Y="0.5" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AQAAAAAAAAAAAAAAAAAAAgAAAABIAAAAAAAAAAgAAAA=</HashCode>
+      <FileName>PathEnumeration.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CrawfisSoftware.PCG.PathGenerator">
+    <Position X="0.5" Y="7" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAQAQAAAAEAAABAAAAAAAAQAAACAAAA=</HashCode>
+      <FileName>PathGenerator.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CrawfisSoftware.PCG.RowEnumerator">
+    <Position X="8.75" Y="0.5" Width="4" />
+    <TypeIdentifier>
+      <HashCode>AQAACABIAAAAACAQBCAAAAAAAQEAAAIAAAABAAAAAQA=</HashCode>
+      <FileName>RowEnumerator.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CrawfisSoftware.PCG.SpanEnumeration" BaseTypeListCollapsed="true">
+    <Position X="5.5" Y="0.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAACAAAAABAhQAAAAAAAAAAAAAAEAAAAAAAAAAA=</HashCode>
+      <FileName>SpanEnumeration.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="CrawfisSoftware.PCG.Loops.LoopGenerator">
+    <Position X="3.75" Y="7" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AEAABAAAAAQQAABAAAAEAAAACACAAAAAAAAAgAAQAgg=</HashCode>
+      <FileName>LoopGenerator.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Enum Name="CrawfisSoftware.PCG.OutflowState">
+    <Position X="0.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAGACAAAAAAAI=</HashCode>
+      <FileName>OutflowStates.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

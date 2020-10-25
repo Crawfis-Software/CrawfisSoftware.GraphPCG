@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace CrawfisSoftware.PCG
 {
-    static public class MergeLoops
+    static internal class MergeLoops
     {
         // Bug: This will produce duplicates
         static public IEnumerable<List<int>> MergeAnAdjacentPair(List<int> components)
@@ -58,6 +58,5 @@ namespace CrawfisSoftware.PCG
                 }
             }
         }
-
     }
 }

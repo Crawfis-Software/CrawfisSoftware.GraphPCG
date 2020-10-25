@@ -1,343 +1,315 @@
-﻿using CrawfisSoftware.Collections.Graph;
-using CrawfisSoftware.Collections.Maze;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
 {
-    public class PathEnumeration : MazeBuilderAbstract<int, int>
+    /// <summary>
+    /// Static class to enumerate paths
+    /// </summary>
+    public static class PathEnumeration
     {
-        public PathEnumeration(int width, int height, int start, int end) : base(width, height, NodeValues, EdgeValues)
+        /// <summary>
+        /// Iterate over all non-cyclical paths from a starting cell to an ending cell on an open grid.
+        /// </summary>
+        /// <param name="width">The width of the underlying grid.</param>
+        /// <param name="height">The height of the underlying grid</param>
+        /// <param name="start">The column index of the starting cell on the first row (row 0).</param>
+        /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
+        /// <returns></returns>
+        public static IEnumerable<IList<int>> AllPaths(int width, int height, int start, int end)
         {
-            // Can optimize enumeration by building tables for a fixed width.
-            // This can be accomplished by calling FindSpans and storing the results.
+            ValidPathRowEnumerator.BuildOddTables(width);
+            var inFlow = new List<int>() { start };
+            //var validStates = OutflowState.Up;
+            //if (start > 0) validStates |= OutflowState.Left;
+            //if (start < width - 1) validStates |= OutflowState.Right;
+            //var outFlowStates = new List<OutflowState>() { validStates };
+            var outFlowStates = OutflowStates.DetermineOutflowStates(width, inFlow);
+            //foreach (var outFlowState in outFlowStates)
+            {
+                //foreach (int row in RowEnumerator.ValidRowsFixedFlowStates(width, inFlow, outFlowState))
+                //foreach (int row in RowEnumerator.ValidRows(width, previousRow))
+                {
+                    var verticalPaths = new int[height];
+                    int[][] components = new int[height][];
+                    for (int i = 0; i < height; i++)
+                        components[i] = new int[width];
+                    components[0][start] = 1;
+                    verticalPaths[0] = 1 << start; // row;
+                    int endRow = 1 << end;
+                    verticalPaths[height - 1] = endRow;
+                    foreach (var grid in AllPathRecursive(width, height, 0, verticalPaths, components))
+                    {
+                        yield return grid;
+                    }
+                }
+            }
+            yield break;
         }
 
-        public override void CreateMaze(bool preserveExistingCells)
+        private static IEnumerable<IList<int>> AllPathRecursive(int width, int height, int index, IList<int> grid, IList<IList<int>> components)
         {
-            // Path Generation can be thought of as three sections. This algorithm will sweep
-            // up the grid, row by row. For faster performance, rotate your grid such that the
-            // width of the row is smaller than the height of the overall grid or maze.
-            // Assume start is on a lower row than end.
-            //    Section 1: Find all loops from 0 until start -> an even number of in-flows.
-            //    Section 2: Find all partial paths from start through end -> odd number of in-flows
-            //    Section 3: Find all loops from end+1 until height.
-            // Create first row
-            // Sweep up adding new rows of loops until Path start
-            // Make sure path start is not encased in a component.
-            // Sweep up adding new rows of paths until Path end.
-            // Make sure components allow start and end to be connected.
-            // Sweep up adding new rows of loops until last row.
-            // Make sure last row is valid and components can be connected w/o intersections.
-            // (optional) Make sure path or loop touches the ends of the rows (0 and width-1).
-            // While sweeping
-            //    Handle connected components and reject enumerations that form disconnected closed loops.
-            //    
-        }
-        private static List<int> InflowsFromBits(int width, int row)
-        {
-            var inFlows = new List<int>();
-            for(int i=0; i < width; i++)
+            int horizontalSpans;
+            if (index == (height - 2))
             {
-                int mask = 1 << (width - i-1);
-                if((row& mask) == mask)
+                if (ValidateAndUpdateComponents(grid[index], grid[height - 1], components, index, out horizontalSpans))
                 {
-                    inFlows.Add(i);
+                    yield return grid;
                 }
-            }
-            return inFlows;
-        }
-        public static IEnumerable<int> FindRows(int width, IList<int> inFlows, IList<int> componentNumbers)
-        {
-            // Go through the list of inFlows and use the FindMatchingRows 
-            // for each subset of inFlows with possible components merged.
-            // This can be accomplished by looking at the set of all pairs and
-            // splitting it into those that start with even and those that start with odd.
-            // All possible selections of these sets are possible. Which implies
-            // all bit vectors of the size of the subsets.
-            //
-            // BUG: This logic is flawed. We need possible union of odd merged and even merged.
-            //
-            int numberOfBits = inFlows.Count / 2;
-            int subsetSize = (1 << numberOfBits) - 1;
-            var inFlowSets = new List<IList<int>>();
-            inFlowSets.Add(inFlows);
-            var masks = new List<int>();
-            int initalMask = (1 << width) -1;
-            masks.Add(initalMask);
-            for (int i = 0; i < subsetSize; i++)
-            {
-                var componentMapping = new Dictionary<int, int>();
-                foreach(int component in componentNumbers)
-                {
-                    componentMapping[component] = component;
-                }
-                var inFlowEvenSubset = new List<int>();
-                var inFlowOddSubset = new List<int>();
-                inFlowOddSubset.Add(inFlows[0]);
-                int bitPattern = i;
-                var deletedFlows = new List<int>(inFlows.Count);
-                for (int bit = 0; bit < numberOfBits; bit++)
-                {
-                    if ((bitPattern & 1) == 0)
-                    {
-                        deletedFlows.Add(2 * bit);
-                    }
-                    else
-                    {
-                        inFlowEvenSubset.Add(inFlows[2 * bit]);
-                        inFlowEvenSubset.Add(inFlows[2 * bit + 1]);
-                        inFlowOddSubset.Add(inFlows[2 * bit + 1]);
-                        inFlowOddSubset.Add(inFlows[2 * bit + 2]);
-                    }
-                    bitPattern >>= 1;
-                }
-                inFlowEvenSubset.Add(inFlows[inFlows.Count - 1]);
-                int maskEven = initalMask;
-                int maskOdd = initalMask;
-
-                Dictionary<int, int> deletedComponents = new Dictionary<int,int>();
-                var newComponentsEven = new List<int>();
-                var newComponentsOff = new List<int>();
-                bool validEven = true;
-                bool validOdd = true;
-                for (int j = 0; j < deletedFlows.Count; j+=2)
-                {
-                    int componentNum1 = componentMapping[componentNumbers[deletedFlows[j]]];
-                    int componentNum2 = componentMapping[componentNumbers[deletedFlows[j] + 1]];
-                    int componentNum3 = componentMapping[componentNumbers[deletedFlows[j] + 2]];
-                    if (componentNum1 == componentNum2)
-                    {
-                        validEven = false;
-                    }
-                    else
-                    {
-                        int startMask = inFlows[deletedFlows[j]];
-                        int endMask = inFlows[deletedFlows[j] + 1];
-                        int closedLoop = 1 << (endMask - startMask + 1);
-                        closedLoop = closedLoop - 1;
-                        closedLoop = closedLoop << (width - endMask - 1);
-                        maskEven &= ~closedLoop;
-
-                        int minComponentNum = componentNum1 < componentNum2 ? componentNum1 : componentNum2;
-                        componentMapping[componentNum1] = minComponentNum;
-                        componentMapping[componentNum2] = minComponentNum;
-                        //deletedComponents[componentNumbers[j]] = componentNumbers[j+1];
-                    }
-
-                    if (componentNum2 == componentNum3)
-                    {
-                        validOdd = false;
-                    }
-                    else
-                    {
-                        int startMask = inFlows[deletedFlows[j] + 1];
-                        int endMask = inFlows[deletedFlows[j] + 2];
-                        int closedLoop = 1 << (endMask - startMask + 1);
-                        closedLoop = closedLoop - 1;
-                        closedLoop = closedLoop << (width - endMask - 1);
-                        maskOdd &= ~closedLoop;
-                        int minComponentNum = componentNum2 < componentNum3 ? componentNum2 : componentNum3;
-                        componentMapping[componentNum2] = minComponentNum;
-                        componentMapping[componentNum3] = minComponentNum;
-                    }
-                }
-                if (validEven)
-                {
-                    for(int l=0; l < deletedComponents.Count; l++)
-                    {
-                        // Todo: delete the component and relabel.
-                    }
-                    masks.Add(maskEven);
-                    inFlowSets.Add(inFlowEvenSubset);
-                }
-                if (validOdd)
-                {
-                    masks.Add(maskOdd);
-                    inFlowSets.Add(inFlowOddSubset);
-                }
-            }
-
-            
-            for(int k = 0; k < inFlowSets.Count; k++)
-            {
-                var newInFlow = inFlowSets[k];
-                int mask = masks[k]; // (1 << width) - 1;
-                // mask sould be computed setting to zero all bits from deleted inFlows.
-                foreach (int row in FindMatchingRows(width, newInFlow))
-                {
-                    // Need to probably return the componenents with each row as well.
-                    // Would be best to return the outFlows and new component numbers.
-                    if ((row & mask) == row)
-                    {
-                        var outFlows = InflowsFromBits(width, row);
-                        yield return row;
-                    }
-                }
-            }
-        }
-        public static IEnumerable<int> FindMatchingRows(int width, IList<int> inFlows)
-        {
-            // This method will ensure each inFlow has an out flow. 
-            // Additional new outFlow pairs are also permissible.
-            // It is basically a depth-first tree traversal of the possible spans
-            // going from left-to-right (down the tree). Foreach first span there
-            // are a set of children associated with the set of second spans, for each
-            // of these there is a set of children with the third span, etc.
-            int currentIndex = 0;
-            var spanEnumerator = MergeSpans(width, 0, currentIndex, inFlows).GetEnumerator();
-            var stack = new Stack<IEnumerator<int>>();
-            var indexStack = new Stack<int>();
-            while (true)
-            {
-                if (spanEnumerator.MoveNext())
-                {
-                    int currentRow = spanEnumerator.Current;
-                    if (currentIndex == inFlows.Count - 1)
-                    {
-                        yield return currentRow;
-                    }
-                    else
-                    {
-                        stack.Push(spanEnumerator);
-                        indexStack.Push(currentIndex);
-                        spanEnumerator = MergeSpans(width, currentRow, ++currentIndex, inFlows).GetEnumerator();
-                    }
-                }
-                else if (stack.Count > 0)
-                {
-                    spanEnumerator.Dispose();
-                    spanEnumerator = stack.Pop();
-                    currentIndex = indexStack.Pop();
-                }
-                else
-                {
-                    yield break;
-                }
-            }
-        }
-        private static IEnumerable<int> MergeSpans(int width, int currentRow, int currentInFlowIndex, IList<int> inFlows)
-        {
-            int spanStart = -1;
-            int tempRow = currentRow;
-            for (int i = 0; i <= width; i++)
-            {
-                spanStart++;
-                if ((tempRow & 1) == 1) break;
-                tempRow = tempRow >> 1;
-            }
-            spanStart = width - spanStart;
-            int lastBitLoc = (currentInFlowIndex > 0) ? inFlows[currentInFlowIndex - 1] + 1 : 0;
-            spanStart = (spanStart > lastBitLoc) ? spanStart : lastBitLoc;
-            int currentInFlow = inFlows[currentInFlowIndex];
-            int spanEnd = (inFlows.Count > (currentInFlowIndex + 1)) ? inFlows[currentInFlowIndex + 1] : width;
-            int spanWidth = spanEnd - spanStart;
-            int shiftAmount = width - spanEnd;
-            int inBitLocation = currentInFlow - spanStart;
-            foreach (int pattern in FindSpans(spanWidth, inBitLocation))
-            {
-                yield return currentRow | (pattern << shiftAmount);
-            }
-        }
-        public static IEnumerable<int> FindSpans(int width, int inBitLocation)
-        {
-            if (width == 1)
-            {
-                yield return 1;
                 yield break;
             }
-
-            foreach (int pattern in SplitOdd0Even(width, inBitLocation))
+            // Todo: Compute all Valid OutflowStates (using components)
+            //  Loop over those calling a more constrained ValidRows.
+            int inFlow = grid[index];
+            var inFlows = ValidPathRowEnumerator.InflowsFromBits(width, inFlow);
+            var inFlowComponents = new List<int>(inFlows.Count);
+            for (int i = 0; i < inFlows.Count; i++)
+                inFlowComponents.Add(components[index][inFlows[i]]);
+            foreach (var outFlowState in OutflowStates.DetermineOutflowStates(width, inFlows, inFlowComponents))
             {
-                yield return pattern;
-            }
-            foreach (int pattern in SplitEven0Odd(width, inBitLocation))
-            {
-                yield return pattern;
-            }
-            foreach (int pattern in SplitEven1Even(width, inBitLocation))
-            {
-                yield return pattern;
-            }
-
-        }
-
-        private static IEnumerable<int> SplitEven1Even(int width, int inBitLocation)
-        {
-            foreach (int evenPattern in BitEnumerators.AllEven(inBitLocation))
-            {
-                int evenPatternShifted = evenPattern << (width - inBitLocation);
-                evenPatternShifted += 1 << (width - inBitLocation - 1);
-                foreach (int oddPattern in BitEnumerators.AllEven(width - inBitLocation - 1))
+                foreach (int child in ValidPathRowEnumerator.ValidRowsFixedFlowStates(width, inFlows, outFlowState))
                 {
-                    int pattern = evenPatternShifted + oddPattern;
-                    yield return pattern;
-                }
-            }
-        }
-
-        private static IEnumerable<int> SplitEven0Odd(int width, int inBitLocation)
-        {
-            // If inBitLocation is the last bit, then nothing should be returned
-            // as an odd number of bits is not possible after this location.
-            if (inBitLocation < (width - 1))
-            {
-                //if (inBitLocation == 0)
-                //{
-                //    foreach (int pattern in BitEnumerators.AllOdd(width - 1))
-                //    {
-                //        yield return pattern;
-                //    }
-                //}
-                //else
-                {
-                    foreach (int evenPattern in BitEnumerators.AllEven(inBitLocation))
+                    grid[index + 1] = child;
+                    if (ValidateAndUpdateComponents(inFlow, child, components, index, out horizontalSpans, height - index))
                     {
-                        int evenPatternShifted = evenPattern << (width - inBitLocation);
-                        foreach (int oddPattern in BitEnumerators.AllOdd(width - inBitLocation - 1))
+                        foreach (var newGrid in AllPathRecursive(width, height, index + 1, grid, components))
                         {
-                            int pattern = evenPatternShifted + oddPattern;
-                            yield return pattern;
+                            yield return newGrid;
                         }
                     }
+                    //else
+                    //    Console.WriteLine("Cannot go from " + inFlow + " to " + child);
                 }
             }
+            yield break;
         }
 
-        private static IEnumerable<int> SplitOdd0Even(int width, int inBitLocation)
+        /// <summary>
+        /// Checks two rows to see if they are valid. If so, components from the first row are matched (or merged) and
+        /// new component numbers are created (as well as new loops). 
+        /// </summary>
+        /// <param name="inFlows">Incoming row of vertical edges</param>
+        /// <param name="outFlows">Outgoing row of vertical edges</param>
+        /// <param name="componentsGrid">The grid of component numbers for each inflow edge on each row</param>
+        /// <param name="index">The current row index</param>
+        /// <param name="horizontalSpans">A bit vector of new horizontal edges created by the component matching,
+        /// merging and creation</param>
+        /// <param name="maxNestedComponents">A constraint to check on the maximum allowed nested loops for this row.</param>
+        /// <returns>True is the outFlows row is a valid row based on the inFlows row.</returns>
+        internal static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, int index, out int horizontalSpans, int maxNestedComponents = System.Int16.MaxValue)
         {
-            // If inBitLocation is the first bit, then nothing should be returned
-            // as an odd number of bits is not possible before this location.
-            if (inBitLocation > 0)
+            // Given:
+            //    a = last known inflow and a matching outflow of d
+            //    b = next inflow that we are trying to match or merge.
+            //    c = next inflow after b, which marks a boundary for our match.
+            //    d = last known outflow, which is matched to inflow a.
+            //    e = the next outflow we are trying to match b to.
+            // Rules
+            //    1) If no outflows from d until c-1 (e >= c), then the inflows b and c were merged (an outflow at c would thus be an error).
+            //    2) if the number of outflow bits from max(a,d)+1 to b is odd, then b matches with last outflow. All others are new components (in pairs).
+            //    3) if the number of outflow bits from max(a,d)+1 to b is even, then these are all new components (in pairs). Note outflow at b must be zero.
+            //    4) if no match still and e < c, then match b to e.
+            //
+            bool isValid = true;
+            IList<int> components = componentsGrid[index];
+            int width = components.Count;
+            var newOutflowComponents = componentsGrid[index+1]; // new int[width];
+            for (int i = 0; i < width; i++)
+                newOutflowComponents[i] = 0;
+            var componentRemap = new Dictionary<int, int>();
+            int a = -1;
+            int d = -1;
+            int b = 0;
+            int inFlowBitPattern = inFlows;
+            int outFlowBitPattern = outFlows;
+            horizontalSpans = 0;
+            int addedComponentNum = width; // Some number larger than all other component numbers (for now)
+            // Find first outflow bit (b)
+            while (b < width)
             {
-                if (inBitLocation == width - 1)
+                if ((inFlowBitPattern & 1) == 1) break;
+                inFlowBitPattern >>= 1;
+                b++;
+            }
+            inFlowBitPattern >>= 1;
+            int spanStart = a + 1;
+            int spanLength = b - spanStart + 1;
+            while ((spanStart < width) && (spanLength > 0) )
+            {
+                int e = d+1;
+                int span = 0;
+                int componentB = (b < width) ? components[b] : 0;
+                //if (componentB == 0) throw new InvalidOperationException("ComponentB is zero!");
+                int tempComponentNum;
+                if (componentRemap.TryGetValue(componentB, out tempComponentNum)) componentB = tempComponentNum;
+                int numOfOutflowsInSpan = 0;
+                if (spanLength > 0)
                 {
-                    foreach (int pattern in BitEnumerators.AllOdd(width - 1))
+                    span = TrimToSpan(outFlows, spanStart, b);
+                    numOfOutflowsInSpan = CountSetBits(span);
+                    outFlowBitPattern = outFlows >> spanStart;
+                }
+                bool rightEdge = true;
+                bool matched = false;
+                int mask = 1; // << (width - 1);
+                // add any extra outflow pairs as new components, if odd number of bits, match b to the last outflow bit.
+                for (int i = 0; i < spanLength; i++)
+                {
+                    if (numOfOutflowsInSpan == 0) break;
+                    if ((span & mask) == mask)
                     {
-                        yield return pattern << 1;
+                        if (rightEdge && numOfOutflowsInSpan == 1)
+                        {
+                            e = i + spanStart;
+                            newOutflowComponents[e] = componentB;
+                            matched = true;
+                            int bitPattern = ((1 << (b - e)) - 1) << e;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans = horizontalSpans | bitPattern;
+                            break;
+                        }
+                        //else
+                        {
+                            numOfOutflowsInSpan -= 1;
+                            newOutflowComponents[i + spanStart] = addedComponentNum;
+                        }
+                        if (!rightEdge)
+                        {
+                            // new loop 
+                            addedComponentNum++;
+                            e = i + spanStart;
+                            int bitPattern = ((1 << (e - d)) - 1) << d;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans = horizontalSpans | bitPattern;
+                        }
+                        d = i + spanStart;
+                        rightEdge = !rightEdge;
+                    }
+                    mask = mask << 1;
+                }
+                int c = b + 1;
+                while (c < width)
+                {
+                    if ((inFlowBitPattern & 1) == 1) break;
+                    inFlowBitPattern >>= 1;
+                    c++;
+                }
+                inFlowBitPattern >>= 1;
+                // b's Inflow goes to the Left
+                // Try to match b to the next outFlow bit.
+                if (!matched)
+                {
+                    outFlowBitPattern = outFlowBitPattern >> spanLength;
+                    e = b + 1;
+                    while (e < c)
+                    {
+                        if ((outFlowBitPattern & 1) == 1)
+                        {
+                            newOutflowComponents[e] = componentB;
+                            matched = true;
+                            int bitPattern = ((1 << (e - b)) - 1) << b;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans = horizontalSpans | bitPattern;
+                            break;
+                        }
+                        outFlowBitPattern >>= 1;
+                        e++;
+                    }
+                    // No match, b and c form a closed loop. Check if valid
+                    if (!matched && (c < width))
+                    {
+                        int componentC = components[c];
+                        if (componentC == 0) throw new InvalidOperationException("ComponentC is zero!");
+                        if (componentRemap.TryGetValue(componentC, out tempComponentNum)) componentC = tempComponentNum;
+                        if (componentB == componentC) 
+                            isValid = false;
+                        else
+                        {
+                            // Remap component c to b.
+                            componentRemap[componentC] = componentB;
+                            int bitPattern = ((1 << (c - b)) - 1) << b;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans = horizontalSpans | bitPattern;
+                        }
+                        // Update d and c
+                        d = e;
+                        b = c;
+                        c++;
+                        while (c < width)
+                        {
+                            if ((inFlowBitPattern & 1) == 1) break;
+                            inFlowBitPattern >>= 1;
+                            c++;
+                        }
+                        inFlowBitPattern >>= 1;
                     }
                 }
-                else
+                a = b;
+                if(matched)
+                    d = e;
+                b = c;
+                spanStart = (a > d) ? a + 1 : d+1;
+                spanLength = b - spanStart + 1;
+            }
+
+            // Renumber components left to right
+            for (int i = 0; i < width; i++)
+            {
+                int componentNum = newOutflowComponents[i];
+                if (componentNum != 0)
                 {
-                    foreach (int oddPattern in BitEnumerators.AllOdd(inBitLocation))
+                    if (componentRemap.ContainsKey(componentNum))
                     {
-                        int oddPatternShifted = oddPattern << (width - inBitLocation);
-                        foreach (int evenPattern in BitEnumerators.AllEven(width - inBitLocation - 1))
-                        {
-                            int pattern = oddPatternShifted + evenPattern;
-                            yield return pattern;
-                        }
+                        newOutflowComponents[i] = componentRemap[componentNum];
                     }
                 }
             }
+            int lastMatched = 0;
+            componentRemap.Clear();
+            int newComponentNum = 1;
+            for (int i = 0; i < width; i++)
+            {
+                int componentNum = newOutflowComponents[i];
+                if (componentNum != 0)
+                {
+                    if (!componentRemap.ContainsKey(componentNum))
+                    {
+                        componentRemap[componentNum] = newComponentNum++;
+                    }
+                    else
+                    {
+                        if (componentRemap[componentNum] - lastMatched > maxNestedComponents)
+                        {
+                            isValid = false;
+                            break;
+                        }
+                        lastMatched = componentRemap[componentNum];
+                    }
+                    newOutflowComponents[i] = componentRemap[componentNum];
+                }
+            }
+            //components = newOutflowComponents;
+            return isValid;
         }
 
-        private static int NodeValues(int i, int j)
+        private static int TrimToSpan(int bitPattern, int start, int end)
         {
-            return 1;
+            int trimmedPattern = bitPattern >> start;
+            int mask = (1 << (end - start + 1)) - 1;
+            return (mask & trimmedPattern);
         }
-        private static int EdgeValues(int i, int j, Direction dir)
+
+        static int CountSetBits(int n)
         {
-            return 1;
+            int count = 0;
+            while (n > 0)
+            {
+                n &= (n - 1);
+                count++;
+            }
+            return count;
         }
     }
 }

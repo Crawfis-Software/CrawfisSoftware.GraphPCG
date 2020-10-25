@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace CrawfisSoftware.PCG
 {
+    /// <summary>
+    /// Enumerate all valid path fragments 
+    /// </summary>
+    /// <remarks>Bit order for a span goes from right to left. N...0</remarks>
     internal class SpanEnumeration : IEnumerable<int>
     {
         private readonly int start;
@@ -32,74 +36,75 @@ namespace CrawfisSoftware.PCG
                     yield return 0;
                 yield break;
             }
-            if((startStates & OutflowState.DeadLeft) == OutflowState.DeadLeft &&
-                (endStates & OutflowState.DeadRight) == OutflowState.DeadRight) // clause not really needed.
+            if((startStates & OutflowState.DeadGoesLeft) == OutflowState.DeadGoesLeft &&
+                (endStates & OutflowState.DeadGoesRight) == OutflowState.DeadGoesRight) // clause not really needed.
             {
                 yield return 0;
                 yield break;
-            }    
-            bool startGoesLeftUpOrIsDead = (startStates & OutflowState.Left) == OutflowState.Left
-                || (startStates & OutflowState.Up) == OutflowState.Up
-                || (startStates & OutflowState.DeadLeft) == OutflowState.DeadLeft
-                || (startStates & OutflowState.DeadRight) == OutflowState.DeadRight;
-            bool startGoesRight = (startStates & OutflowState.Right) == OutflowState.Right;
-            // There are 6 cases, but L-L and R-(R|D) are the same - Odd0.
-            if (startGoesLeftUpOrIsDead)
+            }
+            //bool startGoesLeftUpOrIsDead = (startStates & OutflowState.Left) == OutflowState.Left
+            //    || (startStates & OutflowState.Up) == OutflowState.Up
+            //    || (startStates & OutflowState.DeadLeft) == OutflowState.DeadLeft
+            //    || (startStates & OutflowState.DeadRight) == OutflowState.DeadRight;
+            bool startGoesRightUpOrIsDead = !((startStates & OutflowState.Left) == OutflowState.Left);
+            bool startGoesLeft = (startStates & OutflowState.Left) == OutflowState.Left;
+            // There are 6 cases, but R-R and L-(L|D) are the same - 0-Odd.
+            if (startGoesRightUpOrIsDead)
             {
-                if ((endStates & OutflowState.Left) == OutflowState.Left)
+                if ((endStates & OutflowState.Right) == OutflowState.Right)
                 {
-                    // All Odd + 0;
+                    // All 0 + Odd
                     foreach (int oddPattern in BitEnumerators.AllOdd(width))
                     {
-                        yield return oddPattern << 1;
+                        yield return oddPattern;
                     }
                 }
                 if ((endStates & OutflowState.Up) == OutflowState.Up)
                 {
-                    // All Even + 1;
+                    // All 1 + Even
                     foreach (int evenPattern in BitEnumerators.AllEven(width))
                     {
-                        yield return (evenPattern << 1) + 1;
+                        yield return evenPattern + (1<<width);
                     }
                 }
-                if ((endStates & OutflowState.Right) == OutflowState.Right 
-                    || (endStates & OutflowState.DeadLeft) == OutflowState.DeadLeft)
+                if ((endStates & OutflowState.Left) == OutflowState.Left 
+                    || (endStates & OutflowState.DeadGoesLeft) == OutflowState.DeadGoesLeft)
                 {
-                    // All Even + 0;
+                    // All 0 + Even;
                     foreach (int evenPattern in BitEnumerators.AllEven(width))
                     {
-                        yield return evenPattern << 1;
+                        yield return evenPattern;
                     }
                 }
             }
-            if (startGoesRight)
+            if (startGoesLeft)
             {
-                if ((endStates & OutflowState.Left) == OutflowState.Left)
+                if ((endStates & OutflowState.Right) == OutflowState.Right)
                 {
-                    // All Even with at least 2 bits + 0;
+                    // All Even with at least 2 bits != 0;
                     foreach (int evenPattern in BitEnumerators.AllEven(width))
                     {
                         if (evenPattern != 0)
                         {
-                            yield return evenPattern << 1;
+                            yield return evenPattern;
                         }
                     }
                 }
                 if ((endStates & OutflowState.Up) == OutflowState.Up)
                 {
-                    // All Odd + 1;
+                    // All 1 + Odd
                     foreach (int oddPattern in BitEnumerators.AllOdd(width))
                     {
-                        yield return (oddPattern << 1) + 1;
+                        yield return oddPattern + (1<<width);
                     }
                 }
-                if ((endStates & OutflowState.Right) == OutflowState.Right
-                    || (endStates & OutflowState.DeadLeft) == OutflowState.DeadLeft)
+                if ((endStates & OutflowState.Left) == OutflowState.Left
+                    || (endStates & OutflowState.DeadGoesLeft) == OutflowState.DeadGoesLeft)
                 {
-                    // All Odd + 0;
+                    // All 0 + Odd
                     foreach (int oddPattern in BitEnumerators.AllOdd(width))
                     {
-                        yield return oddPattern << 1;
+                        yield return oddPattern;
                     }
                 }
             }
