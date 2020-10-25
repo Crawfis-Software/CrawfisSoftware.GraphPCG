@@ -86,7 +86,7 @@ namespace CrawfisSoftware.PCG
                             horizontalPaths[height - 2] = horizontalSpans;
                             break;
                         }
-                        if (TryGetValidRow(verticalPaths[height - 3], components, height - 3, out previousRow, out horizontalSpans, endRow, endRow))
+                        if (TryGetValidMatchingRow(verticalPaths[height - 3], components, height - 3, out previousRow, out horizontalSpans, endRow, endRow))
                         {
                             verticalPaths[height - 2] = previousRow;
                             horizontalPaths[height - 3] = horizontalSpans;
@@ -106,7 +106,7 @@ namespace CrawfisSoftware.PCG
                 throw new InvalidOperationException("Sorry, this search seems to be too hard!");
         }
 
-        private bool TryGetValidRow(int previousRow, IList<IList<int>> componentsGrid, int index, out int nextRow, out int horizontalSpans, int inFlowMask, int outFlowMask)
+        private bool TryGetValidMatchingRow(int previousRow, IList<IList<int>> componentsGrid, int index, out int nextRow, out int horizontalSpans, int inFlowMask, int outFlowMask)
         {
             var rowCandidates = ValidPathRowEnumerator.CandidateRows(width, previousRow);
             nextRow = 0;
