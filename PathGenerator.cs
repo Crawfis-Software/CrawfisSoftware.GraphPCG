@@ -79,17 +79,19 @@ namespace CrawfisSoftware.PCG
                     int lastRowSearchAttempt = 0;
                     //int endRowBlocks = (1 << width) - 1;
                     //endRowBlocks &= ~endRow;
+                    // Todo: Bug: leaves new components dangling at the end of the grid. I think height-1 has the components we want to check.
                     while (lastRowSearchAttempt < maxDefaultAttempts)
                     {
-                        if (PathEnumeration.ValidateAndUpdateComponents(previousRow, endRow, components, height - 2, out horizontalSpans, 1))
+                        if (PathEnumeration.ValidateAndUpdateComponents(verticalPaths[height - 2], endRow, components, height - 2, out horizontalSpans, 1))
                         {
                             horizontalPaths[height - 2] = horizontalSpans;
                             break;
                         }
-                        if (TryGetValidMatchingRow(verticalPaths[height - 3], components, height - 3, out previousRow, out horizontalSpans, endRow, endRow))
+                        int newRow;
+                        if (TryGetValidMatchingRow(verticalPaths[height - 2], components, height - 2, out newRow, out horizontalSpans, endRow, endRow))
                         {
-                            verticalPaths[height - 2] = previousRow;
-                            horizontalPaths[height - 3] = horizontalSpans;
+                            verticalPaths[height - 1] = newRow;
+                            horizontalPaths[height - 2] = horizontalSpans;
                             lastRowSearchAttempt++;
                         }
                         else

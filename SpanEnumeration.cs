@@ -7,14 +7,14 @@ namespace CrawfisSoftware.PCG
     /// Enumerate all valid path fragments 
     /// </summary>
     /// <remarks>Bit order for a span goes from right to left. N...0</remarks>
-    internal class SpanEnumeration : IEnumerable<int>
+    public class SpanEnumeration : IEnumerable<int>
     {
         private readonly int start;
         private readonly OutflowState startStates;
         private readonly int end;
         private readonly OutflowState endStates;
         private readonly int width;
-        internal SpanEnumeration(int start, OutflowState startStates, int end, OutflowState endStates)
+        public SpanEnumeration(int start, OutflowState startStates, int end, OutflowState endStates)
         {
             this.start = start;
             this.startStates = startStates;
@@ -26,12 +26,13 @@ namespace CrawfisSoftware.PCG
 
         public IEnumerator<int> GetEnumerator()
         {
+            // Bug: All patterns should be shifted by start.
             if(width == 0)
             {
                 // Only valid case is start has to be true for LeftUpOrDead and end can be Up (1)
                 // or RightOrDead (0). Error checking is performed else where.
                 if ((endStates & OutflowState.Up) == OutflowState.Up)
-                    yield return 1;
+                    yield return 1 << start;
                 else
                     yield return 0;
                 yield break;
@@ -56,7 +57,7 @@ namespace CrawfisSoftware.PCG
                     // All 0 + Odd
                     foreach (int oddPattern in BitEnumerators.AllOdd(width))
                     {
-                        yield return oddPattern;
+                        yield return oddPattern << start;
                     }
                 }
                 if ((endStates & OutflowState.Up) == OutflowState.Up)
@@ -64,7 +65,7 @@ namespace CrawfisSoftware.PCG
                     // All 1 + Even
                     foreach (int evenPattern in BitEnumerators.AllEven(width))
                     {
-                        yield return evenPattern + (1<<width);
+                        yield return (evenPattern + (1<<width)) << start;
                     }
                 }
                 if ((endStates & OutflowState.Left) == OutflowState.Left 
@@ -73,7 +74,7 @@ namespace CrawfisSoftware.PCG
                     // All 0 + Even;
                     foreach (int evenPattern in BitEnumerators.AllEven(width))
                     {
-                        yield return evenPattern;
+                        yield return evenPattern << start;
                     }
                 }
             }
@@ -86,7 +87,7 @@ namespace CrawfisSoftware.PCG
                     {
                         if (evenPattern != 0)
                         {
-                            yield return evenPattern;
+                            yield return evenPattern << start;
                         }
                     }
                 }
@@ -95,7 +96,7 @@ namespace CrawfisSoftware.PCG
                     // All 1 + Odd
                     foreach (int oddPattern in BitEnumerators.AllOdd(width))
                     {
-                        yield return oddPattern + (1<<width);
+                        yield return (oddPattern + (1<<width)) << start;
                     }
                 }
                 if ((endStates & OutflowState.Left) == OutflowState.Left
@@ -104,7 +105,7 @@ namespace CrawfisSoftware.PCG
                     // All 0 + Odd
                     foreach (int oddPattern in BitEnumerators.AllOdd(width))
                     {
-                        yield return oddPattern;
+                        yield return oddPattern << start;
                     }
                 }
             }

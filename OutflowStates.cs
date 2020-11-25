@@ -8,6 +8,7 @@ namespace CrawfisSoftware.PCG
     /// Enum of possible directions an inflow can go.
     /// </summary>
     [Flags]
+    // Bug: Or bad design. Why is this a Flag? They are mutually exclusive.
     public enum OutflowState { Left = 1, Right = 2, Up = 4, DeadGoesLeft = 8, DeadGoesRight = 16 };
 
     internal class OutflowStates

@@ -114,7 +114,7 @@ namespace CrawfisSoftware.PCG
         }
 
         /// <summary>
-        /// Iterate over all valid rows given the rows inflows
+        /// Iterate over all valid rows given a row's inflows
         /// </summary>
         /// <param name="width">The width of the row</param>
         /// <param name="inFlows">A bit pattern of the inflows in the row</param>
@@ -257,9 +257,11 @@ namespace CrawfisSoftware.PCG
         internal static IEnumerable<int> SpanCombiner(int currentRow, int start, OutflowState startState, int end, OutflowState endState)
         {
             int rowPattern = currentRow;
-            foreach(int spanPattern in new SpanEnumeration(0, startState, end-start, endState))
+            //foreach(int spanPattern in new SpanEnumeration(0, startState, end-start, endState))
+            foreach (int spanPattern in new SpanEnumeration(start, startState, end, endState))
             {
-                yield return (spanPattern << start) | rowPattern;
+                //yield return (spanPattern << start) | rowPattern;
+                yield return spanPattern | rowPattern;
             }
         }
     }
