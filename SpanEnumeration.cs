@@ -4,7 +4,8 @@ using System.Collections.Generic;
 namespace CrawfisSoftware.PCG
 {
     /// <summary>
-    /// Enumerate all valid path fragments 
+    /// Enumerate all valid path (or loop) fragments, given the desired outflow state of the
+    /// last bit and the outflow start of the previous span (the start bit location).
     /// </summary>
     /// <remarks>Bit order for a span goes from right to left. N...0</remarks>
     public class SpanEnumeration : IEnumerable<int>
@@ -14,12 +15,20 @@ namespace CrawfisSoftware.PCG
         private readonly int end;
         private readonly OutflowState endStates;
         private readonly int width;
-        public SpanEnumeration(int start, OutflowState startStates, int end, OutflowState endStates)
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="start">The starting bit location (not included in the span).</param>
+        /// <param name="startState">The OutflowState state of the start location (or previous span).</param>
+        /// <param name="end">The ending bit location.</param>
+        /// <param name="endState">The end bit's OutflowState.</param>
+        public SpanEnumeration(int start, OutflowState startState, int end, OutflowState endState)
         {
             this.start = start;
-            this.startStates = startStates;
+            this.startStates = startState;
             this.end = end;
-            this.endStates = endStates;
+            this.endStates = endState;
             //width = end - start + 1;
             width = end - start;  // All patterns add the final bit.
         }
