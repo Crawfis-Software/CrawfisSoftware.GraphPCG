@@ -36,10 +36,18 @@ namespace CrawfisSoftware.PCG
         /// <param name="height">The height of the desired maze</param>
         public LoopGeneratorSideWinder(int width, int height) : base(width, height)
         {
-            this.Width = width;
-            this.Height = height;
-            rowValues = new int[width];
-            newRowValues = new int[width];
+            InitializeTempData();
+        }
+
+        public LoopGeneratorSideWinder(MazeBuilderAbstract<int, int> mazeBuilder) : base(mazeBuilder)
+        {
+            InitializeTempData();
+        }
+
+        private void InitializeTempData()
+        {
+            rowValues = new int[Width];
+            newRowValues = new int[Width];
         }
 
         /// <inheritdoc/>
@@ -136,8 +144,8 @@ namespace CrawfisSoftware.PCG
                     {
                         CarvePassage(cell + currentRow * Width, cell + 1 + currentRow * Width);
                         newRowValues[cell] = component;
-                        lastEnd = newConnection;
                     }
+                    lastEnd = newConnection;
                 }
                 else
                 {
@@ -145,8 +153,8 @@ namespace CrawfisSoftware.PCG
                     {
                         CarvePassage(cell + currentRow * Width, cell + 1 + currentRow * Width);
                         newRowValues[cell] = component;
-                        lastEnd = start;
                     }
+                    lastEnd = start;
                 }
             }
         }

@@ -140,9 +140,10 @@ namespace CrawfisSoftware.PCG
             {
                 Walker initialWalker = new Walker();
                 // Initial start is placed randomly avoiding the borders. Assumes height > 2.
-                int startCell = RandomGenerator.Next(Width - 2) + 1;
-                int heightCheck = (Height > 2) ? RandomGenerator.Next(Height - 2) + 1 : Height - 1;
-                startCell += Width * heightCheck;
+                //int startCell = RandomGenerator.Next(Width - 2) + 1;
+                //int heightCheck = (Height > 2) ? RandomGenerator.Next(Height - 2) + 1 : Height - 1;
+                //startCell += Width * heightCheck;
+                int startCell = this.StartCell;
 
                 initialWalker.StartWalker(this, startCell, preserveExistingCells, favorForwardCarving, RandomGenerator);
                 walkers.Add(initialWalker);
@@ -158,7 +159,7 @@ namespace CrawfisSoftware.PCG
                 foreach (var walker in walkers)
                 {
                     walker.Update();
-                    if (numberOfCarvedPassages < numberOfNewPassages && numberOfSteps < MaxWalkingDistance)
+                    if (numberOfCarvedPassages < numberOfNewPassages || numberOfSteps < MaxWalkingDistance)
                         continue;
                     return;
                 }

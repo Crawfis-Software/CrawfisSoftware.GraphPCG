@@ -46,11 +46,12 @@ namespace CrawfisSoftware.PCG
         private bool first = true;
         private int DefaultPickNextRowFunc(int row, int previousColumn, System.Random randomGenerator = null)
         {
-            if(first && row == 12)
-            {
-                first = false;
-                return 2;
-            }
+            // An example of a "reset". Once it hits 12 it loops back to row 2, creating a long vertical and possibly loops
+            //if(first && row == 12)
+            //{
+            //    first = false;
+            //    return 2;
+            //}
             return row+3;
         }
 
