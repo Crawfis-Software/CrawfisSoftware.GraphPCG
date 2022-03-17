@@ -39,6 +39,10 @@ namespace CrawfisSoftware.PCG
             InitializeTempData();
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="mazeBuilder">Previous MazeBuilderAbstract on which to build upon.</param>
         public LoopGeneratorSideWinder(MazeBuilderAbstract<int, int> mazeBuilder) : base(mazeBuilder)
         {
             InitializeTempData();
