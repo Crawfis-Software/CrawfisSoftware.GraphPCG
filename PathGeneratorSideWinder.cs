@@ -84,6 +84,8 @@ namespace CrawfisSoftware.PCG
                 CarveHorizontalSpan(row, lastColumn, column, preserveExistingCells);
                 lastColumn = column;
                 int nextRow = PickNextRow(row, column, RandomGenerator);
+                nextRow = (nextRow < 0) ? 0 : nextRow;
+                nextRow = (nextRow >= Height) ? Height - 1 : nextRow;
                 CarveVerticalSpan(column, row, nextRow, preserveExistingCells);
                 row = nextRow;
             }
