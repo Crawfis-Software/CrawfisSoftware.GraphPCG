@@ -11,7 +11,7 @@ namespace CrawfisSoftware.PCG
     {
         private static IList<IList<short>> preComputedRowTables;
         private static int tableWidth;
-        private static IList<short> RowList(int width, int row)
+        public static IList<short> RowList(int width, int row)
         {
             if (width == tableWidth)
                 return preComputedRowTables[row];
@@ -77,6 +77,48 @@ namespace CrawfisSoftware.PCG
 
             }
             Task.WaitAll(Task.WhenAll(taskList));
+        }
+
+        /// <summary>
+        /// Create pre-computed tables for paths, which have an odd number of inflows.
+        /// </summary>
+        /// <param name="width">The width of the row</param>
+        /// <param name="oracle">Function that returns true if this outflow configuration is desireable.</param>
+        public static void BuildOddTablesWithConstraints(int width, Func<int, bool> oracle)
+        {
+            if (width > 16)
+                throw new ArgumentOutOfRangeException("row widths greater than 16 would take too much memory");
+            tableWidth = width;
+            int tableSize = (1 << width);
+            preComputedRowTables = new IList<short>[tableSize];
+            var taskList = new List<Task>();
+            foreach (int row in BitEnumerators.AllOdd(width))
+            {
+                if (oracle(row))
+                {
+                    taskList.Add( //BuildTableEntryAsync(width, row));
+                    Task.Run(() =>
+                    {
+                        BuildTableEntryWithConstraints(width, row, oracle);
+                    }
+                    ));
+                }
+            }
+            Task.WaitAll(Task.WhenAll(taskList));
+        }
+
+        private static void BuildTableEntryWithConstraints(int width, int row, Func<int, bool> oracle)
+        {
+            var validRows = new List<short>();
+            //var inFlows = InflowsFromBits(width, row);
+            foreach (int child in ValidPathRowEnumerator.ValidRows(width, row))
+            {
+                if (oracle(child))
+                {
+                    validRows.Add((short)child);
+                }
+            }
+            preComputedRowTables[row] = validRows;
         }
 
         /// <summary>

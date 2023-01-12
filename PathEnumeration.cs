@@ -17,10 +17,18 @@ namespace CrawfisSoftware.PCG
         /// <param name="height">The height of the underlying grid</param>
         /// <param name="start">The column index of the starting cell on the first row (row 0).</param>
         /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
+        /// <param name="oracle">Optional function to specify some global constraints on the outflows of a row.</param>
         /// <returns></returns>
-        public static IEnumerable<IList<int>> AllPaths(int width, int height, int start, int end)
+        public static IEnumerable<IList<int>> AllPaths(int width, int height, int start, int end, Func<int, bool> oracle = null)
         {
-            ValidPathRowEnumerator.BuildOddTables(width);
+            if (oracle == null)
+            {
+                ValidPathRowEnumerator.BuildOddTables(width);
+            }
+            else
+            {
+                ValidPathRowEnumerator.BuildOddTablesWithConstraints(width, oracle);
+            }
             var inFlow = new List<int>() { start };
             //var validStates = OutflowState.Up;
             //if (start > 0) validStates |= OutflowState.Left;
@@ -67,9 +75,10 @@ namespace CrawfisSoftware.PCG
             var inFlowComponents = new List<int>(inFlows.Count);
             for (int i = 0; i < inFlows.Count; i++)
                 inFlowComponents.Add(components[index][inFlows[i]]);
-            foreach (var outFlowState in OutflowStates.DetermineOutflowStates(width, inFlows, inFlowComponents))
+            //foreach (var outFlowState in OutflowStates.DetermineOutflowStates(width, inFlows, inFlowComponents))
             {
-                foreach (int child in ValidPathRowEnumerator.ValidRowsFixedFlowStates(width, inFlows, outFlowState))
+                //foreach (int child in ValidPathRowEnumerator.ValidRowsFixedFlowStates(width, inFlows, outFlowState))
+                foreach (var child in ValidPathRowEnumerator.RowList(width, grid[index]))
                 {
                     grid[index + 1] = child;
                     if (ValidateAndUpdateComponents(inFlow, child, components, index, out horizontalSpans, height - index))

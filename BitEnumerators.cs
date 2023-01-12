@@ -1,5 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace CrawfisSoftware.PCG
 {
@@ -12,9 +16,10 @@ namespace CrawfisSoftware.PCG
     public static class BitEnumerators
     {
         // Tables store values with an odd or even number of bits. Entry zero is ignored.
-        private static int[][] oddNumberOfBitsTable = new int[][] { null, new int[] { 1 }, new int[] { 1, 2 }, new int[] { 1, 2, 4, 7 } };
-        private static int[][] evenNumberOfBitsTable = new int[][] { null, new int[] { 0 }, new int[] { 0, 3 }, new int[] { 0, 3, 5, 6 } };
-        private static int tableSize = 4;
+        private static int[][] oddNumberOfBitsTable = new int[][] { null, new int[] { 1 }, new int[] { 1, 2 } }; //, new int[] { 1, 2, 4, 7 } };
+        private static int[][] evenNumberOfBitsTable = new int[][] { null, new int[] { 0 }, new int[] { 0, 3 } }; //, new int[] { 0, 3, 5, 6 } };
+        //private static int tableSize = 4;
+        private static int tableSize = 3;
         /// <summary>
         /// Algorithm to iterate over all bit patterns up to the specified width that have an
         /// even number of 1's.
@@ -110,6 +115,26 @@ namespace CrawfisSoftware.PCG
             oddNumberOfBitsTable = newOddTable;
             evenNumberOfBitsTable = newEvenTable;
             tableSize = maxTablePatternSize + 1;
+        }
+
+        /// <summary>
+        /// Returns the population count (number of bits set) of a mask.
+        /// Similar in behavior to the x86 instruction POPCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int PopCount(uint value)
+        {
+            const uint c1 = 0x_55555555u;
+            const uint c2 = 0x_33333333u;
+            const uint c3 = 0x_0F0F0F0Fu;
+            const uint c4 = 0x_01010101u;
+
+            value -= (value >> 1) & c1;
+            value = (value & c2) + ((value >> 2) & c2);
+            value = (((value + (value >> 4)) & c3) * c4) >> 24;
+
+            return (int)value;
         }
     }
 }

@@ -49,10 +49,10 @@ namespace CrawfisSoftware.PCG
         /// Enumerate all rows that have the desired inflows and outflow states (left, up, right). All merges
         /// are marked with states dead-goes-right and dead-goes-left.
         /// </summary>
-        /// <param name="width"></param>
-        /// <param name="positions"></param>
+        /// <param name="width">The width of the row.</param>
+        /// <param name="positions">The positions of the inflows.</param>
         /// <param name="components">List of component numbers for each position.</param>
-        /// <returns></returns>
+        /// <returns>An Enumerable of the valid row directions for each inflow position.</returns>
         public static IEnumerable<IEnumerable<OutflowState>> DetermineOutflowStates(int width, List<int> positions, List<int> components)
         {
             IEnumerable<IList<OutflowState>> allStates = DetermineOutflowStates(width, positions);
@@ -68,9 +68,9 @@ namespace CrawfisSoftware.PCG
         /// Enumerate all rows that have the desired inflows and outflow states (left, up, right). All merges
         /// are marked with states dead-goes-right and dead-goes-left.
         /// </summary>
-        /// <param name="width"></param>
-        /// <param name="positions"></param>
-        /// <returns></returns>
+        /// <param name="width">The width of the row.</param>
+        /// <param name="positions">The positions of the inflows.</param>
+        /// <returns>An Enumerable of the valid row directions for each inflow position.</returns>
         public static IEnumerable<IList<OutflowState>> DetermineOutflowStates(int width, List<int> positions)
         {
             List<OutflowState> possibleOutflowStates = DeterminePathTurns(width, positions);
