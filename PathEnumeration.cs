@@ -11,23 +11,23 @@ namespace CrawfisSoftware.PCG
     public static class PathEnumeration
     {
         /// <summary>
-        /// Iterate over all non-cyclical paths from a starting cell to an ending cell on an open grid.
+        /// Iterate over all non-cyclical paths from a starting cell to an ending cell on an open verticalGrid.
         /// </summary>
-        /// <param name="width">The width of the underlying grid.</param>
-        /// <param name="height">The height of the underlying grid</param>
+        /// <param name="width">The width of the underlying verticalGrid.</param>
+        /// <param name="height">The height of the underlying verticalGrid</param>
         /// <param name="start">The column index of the starting cell on the first row (row 0).</param>
         /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
-        /// <param name="oracle">Optional function to specify some global constraints on the outflows of a row.</param>
+        /// <param name="globalConstraintsOracle">Optional function to specify some global constraints on the outflows of a row.</param>
         /// <returns></returns>
-        public static IEnumerable<IList<int>> AllPaths(int width, int height, int start, int end, Func<int, bool> oracle = null)
+        public static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPaths(int width, int height, int start, int end, Func<int, bool> globalConstraintsOracle = null)
         {
-            if (oracle == null)
+            if (globalConstraintsOracle == null)
             {
                 ValidPathRowEnumerator.BuildOddTables(width);
             }
             else
             {
-                ValidPathRowEnumerator.BuildOddTablesWithConstraints(width, oracle);
+                ValidPathRowEnumerator.BuildOddTablesWithConstraints(width, globalConstraintsOracle);
             }
             var inFlow = new List<int>() { start };
             //var validStates = OutflowState.Up;
@@ -41,6 +41,7 @@ namespace CrawfisSoftware.PCG
                 //foreach (int row in RowEnumerator.ValidRows(width, previousRow))
                 {
                     var verticalPaths = new int[height];
+                    var horizontalPaths = new int[height];
                     int[][] components = new int[height][];
                     for (int i = 0; i < height; i++)
                         components[i] = new int[width];
@@ -48,7 +49,7 @@ namespace CrawfisSoftware.PCG
                     verticalPaths[0] = 1 << start; // row;
                     int endRow = 1 << end;
                     verticalPaths[height - 1] = endRow;
-                    foreach (var grid in AllPathRecursive(width, height, 0, verticalPaths, components))
+                    foreach (var grid in AllPathRecursive(width, height, 0, verticalPaths, horizontalPaths, components))
                     {
                         yield return grid;
                     }
@@ -57,20 +58,21 @@ namespace CrawfisSoftware.PCG
             yield break;
         }
 
-        private static IEnumerable<IList<int>> AllPathRecursive(int width, int height, int index, IList<int> grid, IList<IList<int>> components)
+        private static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPathRecursive(int width, int height, int index, IList<int> verticalGrid, IList<int> horizontalGrid, IList<IList<int>> components)
         {
             int horizontalSpans;
             if (index == (height - 2))
             {
-                if (ValidateAndUpdateComponents(grid[index], grid[height - 1], components, index, out horizontalSpans))
+                if (ValidateAndUpdateComponents(verticalGrid[index], verticalGrid[height - 1], components, index, out horizontalSpans))
                 {
-                    yield return grid;
+                    horizontalGrid[height - 1] = horizontalSpans;
+                    yield return (verticalGrid, horizontalGrid);
                 }
                 yield break;
             }
             // Todo: Compute all Valid OutflowStates (using components)
             //  Loop over those calling a more constrained ValidRows.
-            int inFlow = grid[index];
+            int inFlow = verticalGrid[index];
             var inFlows = ValidPathRowEnumerator.InflowsFromBits(width, inFlow);
             var inFlowComponents = new List<int>(inFlows.Count);
             for (int i = 0; i < inFlows.Count; i++)
@@ -78,12 +80,12 @@ namespace CrawfisSoftware.PCG
             //foreach (var outFlowState in OutflowStates.DetermineOutflowStates(width, inFlows, inFlowComponents))
             {
                 //foreach (int child in ValidPathRowEnumerator.ValidRowsFixedFlowStates(width, inFlows, outFlowState))
-                foreach (var child in ValidPathRowEnumerator.RowList(width, grid[index]))
+                foreach (var child in ValidPathRowEnumerator.RowList(width, verticalGrid[index]))
                 {
-                    grid[index + 1] = child;
+                    verticalGrid[index + 1] = child;
                     if (ValidateAndUpdateComponents(inFlow, child, components, index, out horizontalSpans, height - index))
                     {
-                        foreach (var newGrid in AllPathRecursive(width, height, index + 1, grid, components))
+                        foreach (var newGrid in AllPathRecursive(width, height, index + 1, verticalGrid, horizontalGrid, components))
                         {
                             yield return newGrid;
                         }
@@ -101,7 +103,7 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         /// <param name="inFlows">Incoming row of vertical edges</param>
         /// <param name="outFlows">Outgoing row of vertical edges</param>
-        /// <param name="componentsGrid">The grid of component numbers for each inflow edge on each row</param>
+        /// <param name="componentsGrid">The verticalGrid of component numbers for each inflow edge on each row</param>
         /// <param name="index">The current row index</param>
         /// <param name="horizontalSpans">A bit vector of new horizontal edges created by the component matching,
         /// merging and creation</param>
