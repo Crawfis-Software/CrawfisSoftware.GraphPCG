@@ -19,7 +19,9 @@ namespace CrawfisSoftware.PCG
         /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
         /// <param name="globalConstraintsOracle">Optional function to specify some global constraints on the outflows of a row.</param>
         /// <returns></returns>
-        public static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPaths(int width, int height, int start, int end, Func<int, bool> globalConstraintsOracle = null)
+        public static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPaths(int width, int height, int start, int end, 
+            Func<int, bool> globalConstraintsOracle = null, Func<int, int, int, IList<int>, IList<int>, IList<IList<int>>, bool> rowCandidateOracle = null,
+            Func<int, int, int, IList<int>, IList<int>, IList<IList<int>>, bool> horizontalCandidateOracle = null)
         {
             if (globalConstraintsOracle == null)
             {
@@ -29,6 +31,7 @@ namespace CrawfisSoftware.PCG
             {
                 ValidPathRowEnumerator.BuildOddTablesWithConstraints(width, globalConstraintsOracle);
             }
+            int pathID = 0;
             var inFlow = new List<int>() { start };
             //var validStates = OutflowState.Up;
             //if (start > 0) validStates |= OutflowState.Left;
@@ -49,7 +52,7 @@ namespace CrawfisSoftware.PCG
                     verticalPaths[0] = 1 << start; // row;
                     int endRow = 1 << end;
                     verticalPaths[height - 1] = endRow;
-                    foreach (var grid in AllPathRecursive(width, height, 0, verticalPaths, horizontalPaths, components))
+                    foreach (var grid in AllPathRecursive(width, height, 0, verticalPaths, horizontalPaths, components, pathID, rowCandidateOracle, horizontalCandidateOracle))
                     {
                         yield return grid;
                     }
@@ -58,15 +61,21 @@ namespace CrawfisSoftware.PCG
             yield break;
         }
 
-        private static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPathRecursive(int width, int height, int index, IList<int> verticalGrid, IList<int> horizontalGrid, IList<IList<int>> components)
+        private static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPathRecursive(int width, int height, int index, IList<int> verticalGrid, IList<int> horizontalGrid, 
+            IList<IList<int>> components, int pathID, 
+            Func<int, int, int, IList<int>, IList<int>, IList<IList<int>>, bool> rowCandidateOracle = null,
+            Func<int, int, int, IList<int>, IList<int>, IList<IList<int>>, bool> horizontalCandidateOracle = null)
         {
             int horizontalSpans;
             if (index == (height - 2))
             {
                 if (ValidateAndUpdateComponents(verticalGrid[index], verticalGrid[height - 1], components, index, out horizontalSpans))
                 {
-                    horizontalGrid[height - 1] = horizontalSpans;
-                    yield return (verticalGrid, horizontalGrid);
+                    if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, height - 1, horizontalSpans, verticalGrid, horizontalGrid, components))
+                    {
+                        horizontalGrid[height - 1] = horizontalSpans;
+                        yield return (verticalGrid, horizontalGrid);
+                    }
                 }
                 yield break;
             }
@@ -77,24 +86,22 @@ namespace CrawfisSoftware.PCG
             var inFlowComponents = new List<int>(inFlows.Count);
             for (int i = 0; i < inFlows.Count; i++)
                 inFlowComponents.Add(components[index][inFlows[i]]);
-            //foreach (var outFlowState in OutflowStates.DetermineOutflowStates(width, inFlows, inFlowComponents))
+            foreach (var child in ValidPathRowEnumerator.RowList(width, verticalGrid[index]))
             {
-                //foreach (int child in ValidPathRowEnumerator.ValidRowsFixedFlowStates(width, inFlows, outFlowState))
-                foreach (var child in ValidPathRowEnumerator.RowList(width, verticalGrid[index]))
+                if (rowCandidateOracle == null || rowCandidateOracle(pathID, index+1, child, verticalGrid, horizontalGrid, components))
                 {
-                    // Todo: Add an oracle for the child - vertical flows only
                     verticalGrid[index + 1] = child;
                     if (ValidateAndUpdateComponents(inFlow, child, components, index, out horizontalSpans, height - index))
                     {
-                        horizontalGrid[index + 1] = horizontalSpans;
-                        // Todo: add an oracle for the horizontalSpans and the entire state of everything.
-                        foreach (var newGrid in AllPathRecursive(width, height, index + 1, verticalGrid, horizontalGrid, components))
+                        if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, index + 1, horizontalSpans, verticalGrid, horizontalGrid, components))
                         {
-                            yield return newGrid;
+                            horizontalGrid[index + 1] = horizontalSpans;
+                            foreach (var newGrid in AllPathRecursive(width, height, index + 1, verticalGrid, horizontalGrid, components, pathID++, rowCandidateOracle, horizontalCandidateOracle))
+                            {
+                                yield return newGrid;
+                            }
                         }
                     }
-                    //else
-                    //    Console.WriteLine("Cannot go from " + inFlow + " to " + child);
                 }
             }
             yield break;
