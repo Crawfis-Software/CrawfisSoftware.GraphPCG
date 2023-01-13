@@ -82,9 +82,12 @@ namespace CrawfisSoftware.PCG
                 //foreach (int child in ValidPathRowEnumerator.ValidRowsFixedFlowStates(width, inFlows, outFlowState))
                 foreach (var child in ValidPathRowEnumerator.RowList(width, verticalGrid[index]))
                 {
+                    // Todo: Add an oracle for the child - vertical flows only
                     verticalGrid[index + 1] = child;
                     if (ValidateAndUpdateComponents(inFlow, child, components, index, out horizontalSpans, height - index))
                     {
+                        horizontalGrid[index + 1] = horizontalSpans;
+                        // Todo: add an oracle for the horizontalSpans and the entire state of everything.
                         foreach (var newGrid in AllPathRecursive(width, height, index + 1, verticalGrid, horizontalGrid, components))
                         {
                             yield return newGrid;
