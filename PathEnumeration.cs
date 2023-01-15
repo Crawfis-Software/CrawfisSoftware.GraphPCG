@@ -18,7 +18,11 @@ namespace CrawfisSoftware.PCG
         /// <param name="start">The column index of the starting cell on the first row (row 0).</param>
         /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
         /// <param name="globalConstraintsOracle">Optional function to specify some global constraints on the outflows of a row.</param>
-        /// <returns></returns>
+        /// <param name="rowCandidateOracle">Function that returns true or false whether this row is desired. Parameters are: the pathID, the row number,
+        /// the current candidate row value (vertical bits), all verticalBits so far, all horizontal bits so far, all components so far.</param>
+        /// <param name="horizontalCandidateOracle">Function that returns true or false whether this row is desired. Parameters are: the pathID, the row number,
+        /// the current candidate value (horizontal bits), all verticalBits so far, all horizontal bits so far, all components so far.</param>
+        /// <returns>A value tuple of a list of vertical bits and a list of horizontal bits.</returns>
         public static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPaths(int width, int height, int start, int end, 
             Func<int, bool> globalConstraintsOracle = null, Func<int, int, int, IList<int>, IList<int>, IList<IList<int>>, bool> rowCandidateOracle = null,
             Func<int, int, int, IList<int>, IList<int>, IList<IList<int>>, bool> horizontalCandidateOracle = null)
