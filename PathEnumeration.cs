@@ -10,6 +10,7 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     public static class PathEnumeration
     {
+        public delegate bool Validator(int pathID, int rowIndex, int bitsToValidate, IList<int> verticalBitsGrid, IList<int> horizontalBitsGrid, IList<IList<int>> componentsGrid);
         /// <summary>
         /// Iterate over all non-cyclical paths from a starting cell to an ending cell on an open verticalGrid.
         /// </summary>
@@ -24,8 +25,8 @@ namespace CrawfisSoftware.PCG
         /// the current candidate value (horizontal bits), all verticalBits so far, all horizontal bits so far, all components so far.</param>
         /// <returns>A value tuple of a list of vertical bits and a list of horizontal bits.</returns>
         public static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPaths(int width, int height, int start, int end, 
-            Func<int, bool> globalConstraintsOracle = null, Func<int, int, int, IList<int>, IList<int>, IList<IList<int>>, bool> rowCandidateOracle = null,
-            Func<int, int, int, IList<int>, IList<int>, IList<IList<int>>, bool> horizontalCandidateOracle = null)
+            Func<int, bool> globalConstraintsOracle = null, Validator rowCandidateOracle = null,
+            Validator horizontalCandidateOracle = null)
         {
             if (globalConstraintsOracle == null)
             {
@@ -67,8 +68,8 @@ namespace CrawfisSoftware.PCG
 
         private static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPathRecursive(int width, int height, int index, IList<int> verticalGrid, IList<int> horizontalGrid, 
             IList<IList<int>> components, int pathID, 
-            Func<int, int, int, IList<int>, IList<int>, IList<IList<int>>, bool> rowCandidateOracle = null,
-            Func<int, int, int, IList<int>, IList<int>, IList<IList<int>>, bool> horizontalCandidateOracle = null)
+            Validator rowCandidateOracle = null,
+            Validator horizontalCandidateOracle = null)
         {
             int horizontalSpans;
             if (index == (height - 2))
