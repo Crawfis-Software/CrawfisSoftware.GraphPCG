@@ -10,11 +10,33 @@ namespace CrawfisSoftware.PCG
     public static class ValidPathRowEnumerator
     {
         private static IList<IList<short>> preComputedRowTables;
+        private static IList<IList<short>> preComputedOddRowTables;
+        private static IList<IList<short>> preComputedEvenRowTables;
         private static int tableWidth;
-        public static IList<short> RowList(int width, int row)
+
+        /// <summary>
+        /// Get the valid vertical outputs given a vertical input. Valid outputs must have an odd number of bits.
+        /// </summary>
+        /// <param name="width">The width of the row</param>
+        /// <param name="row">The inflow bits.</param>
+        /// <returns>A list of possible outputs.</returns>
+        public static IList<short> OddRowList(int width, int row)
         {
             if (width == tableWidth)
-                return preComputedRowTables[row];
+                return preComputedOddRowTables[row];
+            return null;
+        }
+
+        /// <summary>
+        /// Get the valid vertical outputs given a vertical input. Valid outputs must have an even number of bits.
+        /// </summary>
+        /// <param name="width">The width of the row</param>
+        /// <param name="row">The inflow bits.</param>
+        /// <returns>A list of possible outputs.</returns>
+        public static IList<short> EvenRowList(int width, int row)
+        {
+            if (width == tableWidth)
+                return preComputedEvenRowTables[row];
             return null;
         }
 
@@ -29,6 +51,7 @@ namespace CrawfisSoftware.PCG
             tableWidth = width;
             int tableSize = (1 << width);
             preComputedRowTables = new IList<short>[tableSize];
+            preComputedOddRowTables = preComputedRowTables;
             var taskList = new List<Task>();
             foreach (int row in BitEnumerators.AllOdd(width))
             {
@@ -65,6 +88,7 @@ namespace CrawfisSoftware.PCG
             tableWidth = width;
             int tableSize = (1 << width);
             preComputedRowTables = new IList<short>[tableSize];
+            preComputedEvenRowTables = preComputedRowTables;
             var taskList = new List<Task>();
             foreach (int row in BitEnumerators.AllEven(width))
             {
@@ -91,8 +115,38 @@ namespace CrawfisSoftware.PCG
             tableWidth = width;
             int tableSize = (1 << width);
             preComputedRowTables = new IList<short>[tableSize];
+            preComputedOddRowTables = preComputedRowTables;
             var taskList = new List<Task>();
             foreach (int row in BitEnumerators.AllOdd(width))
+            {
+                if (oracle(row))
+                {
+                    taskList.Add( //BuildTableEntryAsync(width, row));
+                    Task.Run(() =>
+                    {
+                        BuildTableEntryWithConstraints(width, row, oracle);
+                    }
+                    ));
+                }
+            }
+            Task.WaitAll(Task.WhenAll(taskList));
+        }
+
+        /// <summary>
+        /// Create pre-computed tables for loops or paths which do not have a start and end on opposite grid edges, which have an even number of inflows.
+        /// </summary>
+        /// <param name="width">The width of the row</param>
+        /// <param name="oracle">Function that returns true if this outflow configuration is desireable.</param>
+        public static void BuildEvenTablesWithConstraints(int width, Func<int, bool> oracle)
+        {
+            if (width > 16)
+                throw new ArgumentOutOfRangeException("row widths greater than 16 would take too much memory");
+            tableWidth = width;
+            int tableSize = (1 << width);
+            preComputedRowTables = new IList<short>[tableSize];
+            preComputedEvenRowTables = preComputedRowTables;
+            var taskList = new List<Task>();
+            foreach (int row in BitEnumerators.AllEven(width))
             {
                 if (oracle(row))
                 {
@@ -132,7 +186,7 @@ namespace CrawfisSoftware.PCG
         {
             if (preComputedRowTables == null)
                 throw new InvalidOperationException("Tables must be built first. Odd tables for paths, even for loops");
-            var rowList = RowList(width, inFlows);
+            var rowList = OddRowList(width, inFlows);
             if (rowList == null)
             {
                 throw new ArgumentException("The number of inFlows (bits in the inFlows variable) is not correct, or width is too large");
@@ -146,7 +200,7 @@ namespace CrawfisSoftware.PCG
         {
             if (preComputedRowTables == null)
                 throw new InvalidOperationException("Tables must be built first. Odd tables for paths, even for loops");
-            var rowList = RowList(width, inFlows);
+            var rowList = OddRowList(width, inFlows);
             if (rowList == null)
             {
                 throw new ArgumentException("The number of inFlows (bits in the inFlows variable) is not odd, or width is too large");
@@ -169,7 +223,7 @@ namespace CrawfisSoftware.PCG
             // Use ValidRows with states to enumerate all resulting rows.
             if (inFlows == 0)
                 yield break;
-            var rowList = RowList(width, inFlows);
+            var rowList = OddRowList(width, inFlows);
             if (rowList != null)
             {
                 foreach (int row in rowList)
