@@ -23,7 +23,7 @@ namespace CrawfisSoftware.PCG
         /// <param name="startState">The OutflowState state of the start location (or previous span).</param>
         /// <param name="end">The ending bit location.</param>
         /// <param name="endState">The end bit's OutflowState.</param>
-        public SpanEnumeration(int start, OutflowState startState, int end, OutflowState endState)
+        internal SpanEnumeration(int start, OutflowState startState, int end, OutflowState endState)
         {
             this.start = start;
             this.startStates = startState;
@@ -33,6 +33,7 @@ namespace CrawfisSoftware.PCG
             width = end - start;  // All patterns add the final bit.
         }
 
+        /// <inheritdoc/>
         public IEnumerator<int> GetEnumerator()
         {
             // Bug: All patterns should be shifted by start.

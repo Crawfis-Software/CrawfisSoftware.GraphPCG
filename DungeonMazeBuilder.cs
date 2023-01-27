@@ -26,8 +26,31 @@ namespace CrawfisSoftware.PCG
                 this.height = height;
             }
         }
+        /// <summary>
+        /// Defined algorithms for connecting two rooms.
+        /// </summary>
+        public enum PassageRasterizerType { 
+            /// <summary>
+            /// No algorithm selected.
+            /// </summary>
+            Unspecified,
+            /// <summary>
+            /// A simple path with one turn.
+            /// </summary>
+            Elbow,
+            /// <summary>
+            /// Determine the shortest path between the rooms using edge weights.
+            /// </summary>
+            ShortestPathBetweenRooms,
+            /// <summary>
+            /// Shortest path taking advantage of existing paths.
+            /// </summary>
+            ShortestPathUsingExisting,
+            /// <summary>
+            /// Use a random walk
+            /// </summary>
+            RandomWalk };
 
-        public enum PassageRasterizerType { Unspecified, Elbow, ShortestPathBetweenRooms, ShortestPathUsingExisting, RandomWalk };
         private int NumberOfRasterizers = 5;
 
         private List<Room> roomList = new List<Room>();
@@ -101,6 +124,14 @@ namespace CrawfisSoftware.PCG
             //}
         }
 
+        /// <summary>
+        /// Create a room explicitly at the specified location with the specified size.
+        /// </summary>
+        /// <param name="minX">Lowerleft x coordinate.</param>
+        /// <param name="minY">Lower-left y coordinate.</param>
+        /// <param name="roomWidth">Width of the room.</param>
+        /// <param name="roomHeight">Height of the room.</param>
+        /// <returns>An id for the room.</returns>
         public int AddRoom(int minX, int minY, int roomWidth, int roomHeight)
         {
             Room room = new Room(minX, minY, roomWidth, roomHeight);
@@ -108,11 +139,21 @@ namespace CrawfisSoftware.PCG
             return roomList.Count - 1;
         }
 
+        /// <summary>
+        /// Associate a passage between tow rooms
+        /// </summary>
+        /// <param name="room1">The id of the first room.</param>
+        /// <param name="room2">The id of the second room.</param>
+        /// <param name="passageType">A suggestion on how the path should be constructed. The default is Unspecified.</param>
         public void AddConnection(int room1, int room2, PassageRasterizerType passageType = PassageRasterizerType.Unspecified)
         {
             roomConnections.Add(new Tuple<int, int, PassageRasterizerType>(room1, room2, passageType));
         }
 
+        /// <summary>
+        /// Add passageways between rooms in the order they were generated.
+        /// </summary>
+        /// <param name="passageType">A suggestion on how the path should be constructed. The default is Unspecified.</param>
         public void MakeSequentialRoomConnections(PassageRasterizerType passageType = PassageRasterizerType.Unspecified)
         {
             for (int i = 1; i < roomList.Count; i++)
@@ -121,6 +162,11 @@ namespace CrawfisSoftware.PCG
             }
         }
 
+        /// <summary>
+        /// Finds the rooms with the closest center points and adds passageways between them.
+        /// </summary>
+        /// <param name="maxNumberOfConnections">The maximum number of room connections to make.</param>
+        /// <param name="passageType">A suggestion on how the path should be constructed. The default is ShortestPathUsingExisting.</param>
         public void MakeClosestPathConnections(int maxNumberOfConnections = int.MaxValue, PassageRasterizerType passageType = PassageRasterizerType.ShortestPathUsingExisting)
         {
             // Would need to build a graph for the below. Which would require path costs.
@@ -152,6 +198,11 @@ namespace CrawfisSoftware.PCG
             }
         }
 
+        /// <summary>
+        /// Precompute all of the path lengths from a certain room.Required for CarveFurthestPassages
+        /// </summary>
+        /// <param name="roomIndex">The room id that the paths to all other rooms should be computed from.</param>
+        /// <remarks>Useful if you have a center room and want to compute paths to all other rooms to determine connections.</remarks>
         public void ComputePathLengthsFromSource(int roomIndex)
         {
             int sourceCenterX = roomList[roomIndex].minX + roomList[roomIndex].width / 2;
@@ -175,6 +226,9 @@ namespace CrawfisSoftware.PCG
             }
         }
 
+        /// <summary>
+        /// Actually creates the passages in the underlying grid maze.
+        /// </summary>
         public void CarveAllPassages()
         {
             foreach(var edge in roomConnections)
@@ -237,7 +291,10 @@ namespace CrawfisSoftware.PCG
             CarveVerticalSpan(room2CenterX, room1CenterY, room2CenterY, false);
         }
 
-
+        /// <summary>
+        /// Using existing path distances, find the furthestpaths and carve them.
+        /// </summary>
+        /// <param name="numberOfPathsToCarve">THe number of passageways to create.</param>
         public void CarveExtraPassagesFurthestAway(int numberOfPathsToCarve = 1)
         {
             int pathsToCarve = numberOfPathsToCarve;
@@ -273,6 +330,9 @@ namespace CrawfisSoftware.PCG
                 return wallCarveCost * (float)RandomGenerator.NextDouble();
         }
 
+        /// <summary>
+        /// Actually create the rooms in the underlying grid maze.
+        /// </summary>
         public void CarveAllRooms()
         {
             //AddRandomRooms(this.NumberOfRooms-roomList.Count);
@@ -315,6 +375,10 @@ namespace CrawfisSoftware.PCG
             }
         }
 
+        /// <summary>
+        /// Create randome rooms that do not overlap.
+        /// </summary>
+        /// <param name="numberOfRoomsToAdd"></param>
         public void AddRandomRooms(int numberOfRoomsToAdd)
         {
             int deltaWidth = MaxRoomSize - MinRoomSize + 1;

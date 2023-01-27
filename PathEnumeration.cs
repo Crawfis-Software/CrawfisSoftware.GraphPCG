@@ -10,6 +10,18 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     public static class PathEnumeration
     {
+        /// <summary>
+        /// Defines a function that takes in the state of the Path enumeration including a 
+        /// possible new row or vertical bits and returns true if the user wants to allow it, false otherwise.
+        /// This is useful to define constraints on thepath enumeration.
+        /// </summary>
+        /// <param name="pathID">A unique pathID for each path being enumerated.</param>
+        /// <param name="rowIndex">The index of the row currently being enumerated.</param>
+        /// <param name="bitsToValidate">The candiate vertical bits to accept or reject.</param>
+        /// <param name="verticalBitsGrid">The state of the vertical paths up to this row index.</param>
+        /// <param name="horizontalBitsGrid">The state of the horizontal paths up to this row index.</param>
+        /// <param name="componentsGrid">The state of the components up to this row index.</param>
+        /// <returns>True if this row should be included in the enumeration. False otherwise.</returns>
         public delegate bool Validator(int pathID, int rowIndex, int bitsToValidate, IList<int> verticalBitsGrid, IList<int> horizontalBitsGrid, IList<IList<int>> componentsGrid);
         /// <summary>
         /// Iterate over all non-cyclical paths from a starting cell to an ending cell on an open verticalGrid.
