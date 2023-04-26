@@ -103,7 +103,7 @@ namespace CrawfisSoftware.PCG
             var inFlowComponents = new List<int>(inFlows.Count);
             for (int i = 0; i < inFlows.Count; i++)
                 inFlowComponents.Add(components[index][inFlows[i]]);
-            foreach (var child in ValidPathRowEnumerator.OddRowList(width, verticalGrid[index]))
+            foreach (var child in ValidPathRowEnumerator.ValidRowList(width, verticalGrid[index]))
             {
                 if (rowCandidateOracle == null || rowCandidateOracle(pathID, index+1, child, verticalGrid, horizontalGrid, components))
                 {
