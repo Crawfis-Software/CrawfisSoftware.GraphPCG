@@ -82,7 +82,7 @@ namespace CrawfisSoftware.PCG
                     // Todo: Bug: leaves new components dangling at the end of the grid. I think height-1 has the components we want to check.
                     while (lastRowSearchAttempt < maxDefaultAttempts)
                     {
-                        if (PathEnumeration.ValidateAndUpdateComponents(verticalPaths[height - 2], endRow, components, height - 2, out horizontalSpans, 1))
+                        if (EnumerationUtilities.ValidateAndUpdateComponents(verticalPaths[height - 2], endRow, components, height - 2, out horizontalSpans, 1))
                         {
                             horizontalPaths[height - 2] = horizontalSpans;
                             break;
@@ -120,7 +120,7 @@ namespace CrawfisSoftware.PCG
             {
                 if (((row & inFlowMask) == inFlowMask) && ((row & outFlowMask) == row))
                 {
-                    if (PathEnumeration.ValidateAndUpdateComponents(previousRow, nextRow, componentsGrid, index, out horizontalSpans))
+                    if (EnumerationUtilities.ValidateAndUpdateComponents(previousRow, nextRow, componentsGrid, index, out horizontalSpans))
                     {
                         candidates.Add(row);
                     }
@@ -130,7 +130,7 @@ namespace CrawfisSoftware.PCG
                 return false;
             int randomIndex = random.Next(0, candidates.Count);
             nextRow = candidates[randomIndex];
-            PathEnumeration.ValidateAndUpdateComponents(previousRow, nextRow, componentsGrid, index, out horizontalSpans);
+            EnumerationUtilities.ValidateAndUpdateComponents(previousRow, nextRow, componentsGrid, index, out horizontalSpans);
             return true;
         }
         private bool TryGetValidRow(int previousRow, IList<IList<int>> componentsGrid, int index, out int nextRow, out int horizontalSpans, int maxNumberOfTries = maxDefaultAttempts)
@@ -139,7 +139,7 @@ namespace CrawfisSoftware.PCG
             horizontalSpans = 0;
             nextRow = ValidPathRowEnumerator.GetRandomRow(width, previousRow, random);
             int searchAttempt = 0;
-            while((searchAttempt < maxNumberOfTries) && !PathEnumeration.ValidateAndUpdateComponents(previousRow, nextRow, componentsGrid, index, out horizontalSpans))
+            while((searchAttempt < maxNumberOfTries) && !EnumerationUtilities.ValidateAndUpdateComponents(previousRow, nextRow, componentsGrid, index, out horizontalSpans))
             {
                 nextRow = ValidPathRowEnumerator.GetRandomRow(width, previousRow, random);
                 searchAttempt++;

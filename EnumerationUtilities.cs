@@ -1,15 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
 {
     /// <summary>
-    /// Static class to enumerate paths
+    /// Static class to provide some useful enumeration utilities.
     /// </summary>
-    public static class PathEnumeration
+    public static class EnumerationUtilities
     {
+        
         /// <summary>
         /// Defines a function that takes in the state of the Path enumeration including a 
         /// possible new row or vertical bits and returns true if the user wants to allow it, false otherwise.
@@ -22,108 +21,9 @@ namespace CrawfisSoftware.PCG
         /// <param name="horizontalBitsGrid">The state of the horizontal paths up to this row index.</param>
         /// <param name="componentsGrid">The state of the components up to this row index.</param>
         /// <returns>True if this row should be included in the enumeration. False otherwise.</returns>
-        public delegate bool Validator(int pathID, int rowIndex, int bitsToValidate, IList<int> verticalBitsGrid, IList<int> horizontalBitsGrid, IList<IList<int>> componentsGrid);
-        /// <summary>
-        /// Iterate over all non-cyclical paths from a starting cell to an ending cell on an open verticalGrid.
-        /// </summary>
-        /// <param name="width">The width of the underlying verticalGrid.</param>
-        /// <param name="height">The height of the underlying verticalGrid</param>
-        /// <param name="start">The column index of the starting cell on the first row (row 0).</param>
-        /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
-        /// <param name="globalConstraintsOracle">Optional function to specify some global constraints on the outflows of a row.</param>
-        /// <param name="rowCandidateOracle">Function that returns true or false whether this row is desired. Parameters are: the pathID, the row number,
-        /// the current candidate row value (vertical bits), all verticalBits so far, all horizontal bits so far, all components so far.</param>
-        /// <param name="horizontalCandidateOracle">Function that returns true or false whether this row is desired. Parameters are: the pathID, the row number,
-        /// the current candidate value (horizontal bits), all verticalBits so far, all horizontal bits so far, all components so far.</param>
-        /// <returns>A value tuple of a list of vertical bits and a list of horizontal bits.</returns>
-        public static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPaths(int width, int height, int start, int end, 
-            Func<int, bool> globalConstraintsOracle = null, Validator rowCandidateOracle = null,
-            Validator horizontalCandidateOracle = null)
-        {
-            if (globalConstraintsOracle == null)
-            {
-                ValidPathRowEnumerator.BuildOddTables(width);
-            }
-            else
-            {
-                ValidPathRowEnumerator.BuildOddTablesWithConstraints(width, globalConstraintsOracle);
-            }
-            int pathID = 0;
-            var inFlow = new List<int>() { start };
-            //var validStates = OutflowState.Up;
-            //if (start > 0) validStates |= OutflowState.Left;
-            //if (start < width - 1) validStates |= OutflowState.Right;
-            //var outFlowStates = new List<OutflowState>() { validStates };
-            var outFlowStates = OutflowStates.DetermineOutflowStates(width, inFlow);
-            //foreach (var outFlowState in outFlowStates)
-            {
-                //foreach (int row in RowEnumerator.ValidRowsFixedFlowStates(width, inFlow, outFlowState))
-                //foreach (int row in RowEnumerator.ValidRows(width, previousRow))
-                {
-                    var verticalPaths = new int[height];
-                    var horizontalPaths = new int[height];
-                    int[][] components = new int[height][];
-                    for (int i = 0; i < height; i++)
-                        components[i] = new int[width];
-                    components[0][start] = 1;
-                    verticalPaths[0] = 1 << start; // row;
-                    int endRow = 1 << end;
-                    verticalPaths[height - 1] = endRow;
-                    foreach (var grid in AllPathRecursive(width, height, 0, verticalPaths, horizontalPaths, components, pathID, rowCandidateOracle, horizontalCandidateOracle))
-                    {
-                        yield return grid;
-                    }
-                }
-            }
-            yield break;
-        }
-
-        private static IEnumerable<(IList<int> vertical, IList<int> horizontal)> AllPathRecursive(int width, int height, int index, IList<int> verticalGrid, IList<int> horizontalGrid, 
-            IList<IList<int>> components, int pathID, 
-            Validator rowCandidateOracle = null,
-            Validator horizontalCandidateOracle = null)
-        {
-            int horizontalSpans;
-            if (index == (height - 2))
-            {
-                if (ValidateAndUpdateComponents(verticalGrid[index], verticalGrid[height - 1], components, index, out horizontalSpans))
-                {
-                    if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, height - 1, horizontalSpans, verticalGrid, horizontalGrid, components))
-                    {
-                        horizontalGrid[height - 1] = horizontalSpans;
-                        yield return (verticalGrid, horizontalGrid);
-                    }
-                }
-                yield break;
-            }
-            // Todo: Compute all Valid OutflowStates (using components)
-            //  Loop over those calling a more constrained ValidRows.
-            int inFlow = verticalGrid[index];
-            var inFlows = ValidPathRowEnumerator.InflowsFromBits(width, inFlow);
-            var inFlowComponents = new List<int>(inFlows.Count);
-            for (int i = 0; i < inFlows.Count; i++)
-                inFlowComponents.Add(components[index][inFlows[i]]);
-            foreach (var child in ValidPathRowEnumerator.ValidRowList(width, verticalGrid[index]))
-            {
-                if (rowCandidateOracle == null || rowCandidateOracle(pathID, index+1, child, verticalGrid, horizontalGrid, components))
-                {
-                    verticalGrid[index + 1] = child;
-                    if (ValidateAndUpdateComponents(inFlow, child, components, index, out horizontalSpans, height - index))
-                    {
-                        if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, index + 1, horizontalSpans, verticalGrid, horizontalGrid, components))
-                        {
-                            horizontalGrid[index + 1] = horizontalSpans;
-                            foreach (var newGrid in AllPathRecursive(width, height, index + 1, verticalGrid, horizontalGrid, components, pathID++, rowCandidateOracle, horizontalCandidateOracle))
-                            {
-                                yield return newGrid;
-                            }
-                        }
-                    }
-                }
-            }
-            yield break;
-        }
-
+        public delegate bool Validator(int pathID, int rowIndex, int bitsToValidate, 
+            IList<int> verticalBitsGrid, IList<int> horizontalBitsGrid, IList<IList<int>> componentsGrid);
+        
         /// <summary>
         /// Checks two rows to see if they are valid. If so, components from the first row are matched (or merged) and
         /// new component numbers are created (as well as new loops). 
@@ -136,7 +36,8 @@ namespace CrawfisSoftware.PCG
         /// merging and creation</param>
         /// <param name="maxNestedComponents">A constraint to check on the maximum allowed nested loops for this row.</param>
         /// <returns>True is the outFlows row is a valid row based on the inFlows row.</returns>
-        internal static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, int index, out int horizontalSpans, int maxNestedComponents = System.Int16.MaxValue)
+        public static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, 
+            int index, out int horizontalSpans, int maxNestedComponents = System.Int16.MaxValue)
         {
             // Given:
             //    a = last known inflow and a matching outflow of d
@@ -331,15 +232,27 @@ namespace CrawfisSoftware.PCG
             //components = newOutflowComponents;
             return isValid;
         }
-
-        private static int TrimToSpan(int bitPattern, int start, int end)
+        
+        /// <summary>
+        /// Trim the bit pattern to the span between start and end (inclusive)
+        /// </summary>
+        /// <param name="bitPattern"></param>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
+        public static int TrimToSpan(int bitPattern, int start, int end)
         {
             int trimmedPattern = bitPattern >> start;
             int mask = (1 << (end - start + 1)) - 1;
             return (mask & trimmedPattern);
         }
 
-        static int CountSetBits(int n)
+        /// <summary>
+        /// Count the number of set bits in the bit pattern
+        /// </summary>
+        /// <param name="n"> Base 10 representation of bits</param>
+        /// <returns></returns>
+        public static int CountSetBits(int n)
         {
             int count = 0;
             while (n > 0)
@@ -349,5 +262,42 @@ namespace CrawfisSoftware.PCG
             }
             return count;
         }
+        
+        /// <summary>
+        /// Generate a random bit pattern with an odd number of set bits under given width
+        /// </summary>
+        /// <param name="width"> Maximum number of digits permitted in a bit pattern</param>
+        /// <param name="random"> Random number generator </param>
+        /// <returns></returns>
+        public static int RandomOddBitPattern(int width, Random random)
+        {
+            int max = (int) Math.Pow(2, width);
+            int bitPattern = random.Next(max);
+            while (CountSetBits(bitPattern) % 2 == 0)
+            {
+                bitPattern = random.Next(max);
+            }
+
+            return bitPattern;
+        }
+        
+        /// <summary>
+        /// Generate a random bit pattern with an even number of set bits under given width
+        /// </summary>
+        /// <param name="width"> Maximum number of digits permitted in a bit pattern</param>
+        /// <param name="random"> Random number generator </param>
+        /// <returns></returns>
+        public static int RandomEvenBitPattern(int width, Random random)
+        {
+            int max = (int) Math.Pow(2, width);
+            int bitPattern = random.Next(max);
+            while (CountSetBits(bitPattern) % 2 != 0)
+            {
+                bitPattern = random.Next(max);
+            }
+
+            return bitPattern;
+        }
+        
     }
 }
