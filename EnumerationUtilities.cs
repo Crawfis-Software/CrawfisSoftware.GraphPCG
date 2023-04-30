@@ -269,13 +269,13 @@ namespace CrawfisSoftware.PCG
         /// <param name="width"> Maximum number of digits permitted in a bit pattern</param>
         /// <param name="random"> Random number generator </param>
         /// <returns></returns>
-        public static int RandomOddBitPattern(int width, Random random)
+        public static short RandomOddBitPattern(int width, Random random)
         {
             int max = (int) Math.Pow(2, width);
-            int bitPattern = random.Next(max);
+            short bitPattern = (short)random.Next(max);
             while (CountSetBits(bitPattern) % 2 == 0)
             {
-                bitPattern = random.Next(max);
+                bitPattern = (short)random.Next(max);
             }
 
             return bitPattern;
@@ -287,13 +287,13 @@ namespace CrawfisSoftware.PCG
         /// <param name="width"> Maximum number of digits permitted in a bit pattern</param>
         /// <param name="random"> Random number generator </param>
         /// <returns></returns>
-        public static int RandomEvenBitPattern(int width, Random random)
+        public static short RandomEvenBitPattern(int width, Random random)
         {
             int max = (int) Math.Pow(2, width);
-            int bitPattern = random.Next(max);
+            short bitPattern = (short)random.Next(max);
             while (CountSetBits(bitPattern) % 2 != 0)
             {
-                bitPattern = random.Next(max);
+                bitPattern = (short)random.Next(max);
             }
 
             return bitPattern;

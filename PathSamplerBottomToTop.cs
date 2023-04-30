@@ -16,7 +16,6 @@ namespace CrawfisSoftware.PCG
         private readonly int _width;
         private readonly int _height;
         private readonly Random _random;
-        private readonly Func<int, bool> _globalConstraintsOracle;
         private readonly Validator _verticalCandidateOracle;
         private readonly Validator _horizontalCandidateOracle;
 
@@ -39,7 +38,6 @@ namespace CrawfisSoftware.PCG
             this._width = width;
             this._height = height;
             this._random = random;
-            this._globalConstraintsOracle = globalConstraintsOracle;
             this._verticalCandidateOracle = verticalCandidateOracle;
             this._horizontalCandidateOracle = horizontalCandidateOracle;
 
