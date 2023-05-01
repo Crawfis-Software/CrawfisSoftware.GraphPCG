@@ -71,8 +71,20 @@ namespace CrawfisSoftware.PCG
             verticalPaths[0] = 1 << start; // row;
             int endRow = 1 << end;
             verticalPaths[_height - 1] = endRow;
-            return SampleRecursive(_width, _height, 0, verticalPaths, horizontalPaths, components, pathID,
-                _verticalCandidateOracle, _horizontalCandidateOracle);
+            int attempt = 0;
+            while (attempt < 10)
+            {
+                try
+                {
+                    return SampleRecursive(_width, _height, 0, verticalPaths, horizontalPaths, components, pathID,
+                        _verticalCandidateOracle, _horizontalCandidateOracle);
+                }
+                catch (Exception)
+                {
+                    attempt++;
+                }
+            }
+            throw new Exception("Unable to find a path");
 
         }
 
@@ -102,8 +114,11 @@ namespace CrawfisSoftware.PCG
 
                     lastRowAttempts++;
                 }
+                if (lastRowAttempts == MaxDefaultAttempts)
+                    throw new Exception("Unable to find a valid last row.");
 
             }
+            
 
             int inFlow = verticalGrid[index];
             var inFlows = ValidPathRowEnumerator.InflowsFromBits(width, inFlow);
