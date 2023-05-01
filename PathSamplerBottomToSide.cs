@@ -85,47 +85,120 @@ namespace CrawfisSoftware.PCG
             Validator rowCandidateOracle = null,
             Validator horizontalCandidateOracle = null)
         {
+            if (index == height - 1)
+            {
+                return (verticalGrid, horizontalGrid);
+            }
 
+            Console.WriteLine($"{index} : {EnumerationUtilities.CountSetBits(verticalGrid[index])}");
             int horizontalSpans;
-
-
             int inFlow = verticalGrid[index];
             var inFlows = ValidPathRowEnumerator.InflowsFromBits(width, inFlow);
             var inFlowComponents = new List<int>(inFlows.Count);
             for (int i = 0; i < inFlows.Count; i++)
                 inFlowComponents.Add(components[index][inFlows[i]]);
 
-            
-            int attempts = 0;
-            IList<short> rowLists = ValidPathRowEnumerator.ValidRowList(width, verticalGrid[index]).ToList();
-            int listLen = rowLists.Count;
-            short rowCandidate = rowLists[_random.Next(listLen)];
-            
-            while (attempts < MaxDefaultAttempts)
+            if (index < endRow - 1)
             {
-                if (rowCandidateOracle == null ||
-                    rowCandidateOracle(pathID, index + 1, rowCandidate, verticalGrid, horizontalGrid, components))
+                ValidPathRowEnumerator.PointToOddTable();
+                int attempts = 0;
+                IList<short> rowLists = ValidPathRowEnumerator.ValidRowList(width, verticalGrid[index]).ToList();
+                int listLen = rowLists.Count;
+                short rowCandidate = rowLists[_random.Next(listLen)];
+                while (attempts < MaxDefaultAttempts)
                 {
-                    verticalGrid[index + 1] = rowCandidate;
-                    if (ValidateAndUpdateComponents(inFlow, rowCandidate, components, index, out horizontalSpans,
-                            height - index))
+                    if (rowCandidateOracle == null ||
+                        rowCandidateOracle(pathID, index + 1, rowCandidate, verticalGrid, horizontalGrid, components))
                     {
-                        if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, index + 1,
-                                horizontalSpans, verticalGrid, horizontalGrid, components))
+                        verticalGrid[index + 1] = rowCandidate;
+                        if (ValidateAndUpdateComponents(inFlow, rowCandidate, components, index, out horizontalSpans,
+                                height - index))
                         {
-                            horizontalGrid[index + 1] = horizontalSpans;
-                            return SampleRecursive(width, height, index + 1, verticalGrid, horizontalGrid, components,
-                                pathID++, endRow, isLeft, rowCandidateOracle, horizontalCandidateOracle);
+                            if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, index + 1,
+                                    horizontalSpans, verticalGrid, horizontalGrid, components))
+                            {
+                                horizontalGrid[index + 1] = horizontalSpans;
+                                return SampleRecursive(width, height, index + 1, verticalGrid, horizontalGrid,
+                                    components,
+                                    pathID++, endRow, isLeft, rowCandidateOracle, horizontalCandidateOracle);
 
+                            }
                         }
                     }
-                }
 
-                attempts++;
-                rowCandidate= rowLists[_random.Next(listLen)];
+                    attempts++;
+                    rowCandidate = rowLists[_random.Next(listLen)];
+                }
             }
             
+            if (index >= endRow)
+            {
+                ValidPathRowEnumerator.PointToEvenTable();
+                int attempts = 0;
+                IList<short> rowLists = ValidPathRowEnumerator.ValidRowList(width, verticalGrid[index]).ToList();
+                int listLen = rowLists.Count;
+                short rowCandidate = rowLists[_random.Next(listLen)];
+                while (attempts < MaxDefaultAttempts)
+                {
+                    if (rowCandidateOracle == null ||
+                        rowCandidateOracle(pathID, index + 1, rowCandidate, verticalGrid, horizontalGrid, components))
+                    {
+                        verticalGrid[index + 1] = rowCandidate;
+                        if (ValidateAndUpdateComponents(inFlow, rowCandidate, components, index, out horizontalSpans,
+                                height - index))
+                        {
+                            if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, index + 1,
+                                    horizontalSpans, verticalGrid, horizontalGrid, components))
+                            {
+                                horizontalGrid[index + 1] = horizontalSpans;
+                                return SampleRecursive(width, height, index + 1, verticalGrid, horizontalGrid,
+                                    components,
+                                    pathID++, endRow, isLeft, rowCandidateOracle, horizontalCandidateOracle);
+
+                            }
+                        }
+                    }
+
+                    attempts++;
+                    rowCandidate = rowLists[_random.Next(listLen)];
+                }
+            }
+            
+            if (index == endRow - 1)
+            {
+                int attempts = 0;
+
+                short rowCandidate = EnumerationUtilities.RandomEvenBitPattern(_width, _random);
+                while (attempts < MaxDefaultAttempts)
+                {
+                    if (rowCandidateOracle == null ||
+                        rowCandidateOracle(pathID, index + 1, rowCandidate, verticalGrid, horizontalGrid, components))
+                    {
+                        verticalGrid[index + 1] = rowCandidate;
+                        if (ValidateAndUpdateComponents(inFlow, rowCandidate, components, index, out horizontalSpans,
+                                height - index))
+                        {
+                            if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, index + 1,
+                                    horizontalSpans, verticalGrid, horizontalGrid, components))
+                            {
+                                horizontalGrid[index + 1] = horizontalSpans;
+                                return SampleRecursive(width, height, index + 1, verticalGrid, horizontalGrid,
+                                    components,
+                                    pathID++, endRow, isLeft, rowCandidateOracle, horizontalCandidateOracle);
+
+                            }
+                        }
+                    }
+
+                    attempts++;
+                    rowCandidate = EnumerationUtilities.RandomEvenBitPattern(_width, _random);
+                }
+            }
+
+
+
             return (null, null);
         }
+        
     }
 }

@@ -72,7 +72,7 @@ namespace CrawfisSoftware.PCG
             int endRow = 1 << end;
             verticalPaths[_height - 1] = endRow;
             int attempt = 0;
-            while (attempt < 10)
+            while (attempt < MaxDefaultAttempts)
             {
                 try
                 {
