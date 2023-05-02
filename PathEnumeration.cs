@@ -54,7 +54,7 @@ namespace CrawfisSoftware.PCG
             //if (start > 0) validStates |= OutflowState.Left;
             //if (start < width - 1) validStates |= OutflowState.Right;
             //var outFlowStates = new List<OutflowState>() { validStates };
-            var outFlowStates = OutflowStates.DetermineOutflowStates(width, inFlow);
+            //var outFlowStates = OutflowStates.DetermineOutflowStates(width, inFlow);
             //foreach (var outFlowState in outFlowStates)
             {
                 //foreach (int row in RowEnumerator.ValidRowsFixedFlowStates(width, inFlow, outFlowState))

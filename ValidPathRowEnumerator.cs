@@ -216,7 +216,7 @@ namespace CrawfisSoftware.PCG
         /// <param name="leftEdgeState">The Outflow state of the first outflow.</param>
         /// <param name="rightEdgeState">The outflow state for the last outflow.</param>
         /// <returns>An enumerable of integers that represent the state of the row.</returns>
-        internal static IEnumerable<int> ValidRows(int width, int inFlows,
+        private static IEnumerable<int> ValidRows(int width, int inFlows,
             OutflowState leftEdgeState = OutflowState.DeadGoesRight, OutflowState rightEdgeState = OutflowState.DeadGoesLeft)
         {
             // Find all possible merges.
@@ -224,13 +224,6 @@ namespace CrawfisSoftware.PCG
             // Use ValidRows with states to enumerate all resulting rows.
             if (inFlows == 0)
                 yield break;
-            var rowList = OddRowList(width, inFlows);
-            if (rowList != null)
-            {
-                foreach (int row in rowList)
-                    yield return row;
-                yield break;
-            }
             var inFlowPositions = InflowsFromBits(width, inFlows);
             var components = new List<int>(width);
             // any set of unique numbers will work. Just trying to avoid any merge rejects
