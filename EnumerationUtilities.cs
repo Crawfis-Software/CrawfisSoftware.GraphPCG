@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CrawfisSoftware.PCG
 {
@@ -297,6 +299,11 @@ namespace CrawfisSoftware.PCG
             }
 
             return bitPattern;
+        }
+
+        public static int NumberOfComponents(IList<IList<int>> componentGrid)
+        {
+            return componentGrid.SelectMany(x => x).Distinct().Count();
         }
         
     }
