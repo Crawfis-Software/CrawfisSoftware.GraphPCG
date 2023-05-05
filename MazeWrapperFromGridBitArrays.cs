@@ -40,7 +40,7 @@ namespace CrawfisSoftware.PCG
                 {
                     if ((horizontalBits & 1) == 1)
                     {
-                        mazeBuilder.CarvePassage(i, row+1, i+1, row+1);
+                        mazeBuilder.CarvePassage(i, row, i+1, row);
                     }
                     horizontalBits >>= 1;
                 }
