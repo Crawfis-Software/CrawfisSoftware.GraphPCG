@@ -6,7 +6,12 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DocumentationFile>bin\Debug\GraphPCG.xml</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)Documentation\GraphPCG.xml</DocumentationFile>
+    <OutputPath>$(SolutionDir)bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <OutputPath>$(SolutionDir)bin\Release\</OutputPath>
+    <DocumentationFile>$(SolutionDir)Documentation\CrawfisSoftware.GraphPCG.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
