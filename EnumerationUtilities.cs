@@ -301,10 +301,14 @@ namespace CrawfisSoftware.PCG
             return bitPattern;
         }
 
-        public static int NumberOfComponents(IList<IList<int>> componentGrid)
+        /// <summary>
+        /// Counts the number of distinct numbers in the List.
+        /// </summary>
+        /// <param name="list">An IEnumerable of int's</param>
+        /// <returns>The number of distint values within the list.</returns>
+        public static int NumberOfDistinctValues(IEnumerable<int> list)
         {
-            return componentGrid.SelectMany(x => x).Distinct().Count();
+            return list.Distinct().Count();
         }
-        
     }
 }
