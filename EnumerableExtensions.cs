@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Utility
 {
     /// <summary>
     /// Static helper class for enumerables
@@ -17,8 +17,28 @@ namespace CrawfisSoftware.PCG
         /// <param name="inputs">A set, N of sets.</param>
         /// <returns>A set of N-dimensional sets.</returns>
         /// <example>{a,b} x {c,d} => {(a,c), (a,d), (b,c), (b,d)}</example>
+        /// <seealso cref="CartesianProduct{T}(IEnumerable{T}[])"/>
         public static IEnumerable<IEnumerable<T>> CartesianProduct<T>(
             IEnumerable<IEnumerable<T>> inputs)
+        {
+            return inputs.Aggregate(
+                EnumerableFrom(Enumerable.Empty<T>()),
+                (oldCoordinate, newCoordinate) =>
+                    from cartesianProductInSoFar in oldCoordinate
+                    from item in newCoordinate
+                    select cartesianProductInSoFar.Append(item));
+        }
+        /// <summary>
+        /// Performs a n-Cartesian product (or cross product) from the 
+        /// set of sets passed in. 
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the sets.</typeparam>
+        /// <param name="inputs">A list of sets.</param>
+        /// <returns>A set of N-dimensional sets.</returns>
+        /// <example>{a,b} x {c,d} => {(a,c), (a,d), (b,c), (b,d)}</example>
+        /// <seealso cref="CartesianProduct{T}(IEnumerable{IEnumerable{T}})"/>
+        public static IEnumerable<IEnumerable<T>> CartesianProduct<T>(
+            params IEnumerable<T>[] inputs)
         {
             return inputs.Aggregate(
                 EnumerableFrom(Enumerable.Empty<T>()),
