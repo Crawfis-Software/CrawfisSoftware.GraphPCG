@@ -36,7 +36,7 @@ namespace CrawfisSoftware.PCG
             Validator horizontalCandidateOracle = null)
         {
             this._width = width;
-            this._height = height;
+            this._height = height + 1;
             this._random = random;
             this._verticalCandidateOracle = verticalCandidateOracle;
             this._horizontalCandidateOracle = horizontalCandidateOracle;
@@ -71,6 +71,7 @@ namespace CrawfisSoftware.PCG
             verticalPaths[0] = 1 << start; // row;
             int endRow = 1 << end;
             verticalPaths[_height - 1] = endRow;
+            
             int attempt = 0;
             while (attempt < MaxDefaultAttempts)
             {
@@ -108,7 +109,18 @@ namespace CrawfisSoftware.PCG
                                 horizontalSpans, verticalGrid, horizontalGrid, components))
                         {
                             horizontalGrid[height - 1] = horizontalSpans;
-                            return (verticalGrid, horizontalGrid);
+                            
+                            var verticalPaths = new int[_height -1];
+                            var horizontalPaths = new int[_height -1];
+                            // Shift Everything by 1 with new grid
+                             for (int i = 0; i < _height - 1; i++)
+                             {
+                                 verticalPaths[i] = verticalGrid[i + 1];
+                                 horizontalPaths[i] = horizontalGrid[i + 1];
+                             }
+
+
+                             return (verticalPaths, horizontalPaths);
                         }
                     }
 

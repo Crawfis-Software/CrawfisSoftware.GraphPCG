@@ -9,7 +9,8 @@ namespace CrawfisSoftware.PCG
 {
     public class LoopSamplerBottomToTop
     {
-                private const int MaxDefaultAttempts = 10000;
+        
+        private const int MaxDefaultAttempts = 10000;
         private readonly int _width;
         private readonly int _height;
         private readonly Random _random;
@@ -33,7 +34,7 @@ namespace CrawfisSoftware.PCG
             EnumerationUtilities.Validator horizontalCandidateOracle = null)
         {
             this._width = width;
-            this._height = height;
+            this._height = height - 1;
             this._random = random;
             this._verticalCandidateOracle = verticalCandidateOracle;
             this._horizontalCandidateOracle = horizontalCandidateOracle;
@@ -59,33 +60,36 @@ namespace CrawfisSoftware.PCG
         {
             int pathID = 0;
             var verticalPaths = new int[_height];
-            var horizontalPaths = new int[_height];
+            var horizontalPaths = new int[_height + 1];
             int[][] components = new int[_height][];
             for (int i = 0; i < _height; i++)
                 components[i] = new int[_width];
 
-            components[0][0] = 1;
-            components[0][1] = 1;
+            for (int i = 0; i < _width; i++)
+                components[0][i] = 1;
+                    
             
-            verticalPaths[0] = 3; // row;
+            verticalPaths[0] = (int)Math.Pow(2, _width -1) + 1; // row;
+            horizontalPaths[0] = (int)Math.Pow(2, _width) - 1;
             
-            int endRow = verticalPaths[0];
-            verticalPaths[_height - 1] = endRow;
+            verticalPaths[_height - 1] = (int)Math.Pow(2, _width -1) + 1; // row;
+
+            //int endRow = verticalPaths[0];
+            //verticalPaths[_height - 1] = endRow;
             int attempt = 0;
             while (attempt < MaxDefaultAttempts)
             {
-                //try
-                //{
+                try
+                {
                     return SampleRecursive(_width, _height, 0, verticalPaths, horizontalPaths, components, pathID,
                         _verticalCandidateOracle, _horizontalCandidateOracle);
-                //}
-                // catch (Exception)
-                // {
-                //     
-                //     attempt++;
-                // }
+                }
+                catch (Exception)
+                {
+                    attempt++;
+                }
             }
-            throw new Exception("Unable to find a path");
+            throw new Exception("Unable to form a loop");
 
         }
 
@@ -97,6 +101,7 @@ namespace CrawfisSoftware.PCG
             EnumerationUtilities.Validator horizontalCandidateOracle = null)
         {
             int horizontalSpans;
+            
             if (index == (height - 2))
             {
                 int lastRowAttempts = 0;
@@ -109,6 +114,7 @@ namespace CrawfisSoftware.PCG
                                 horizontalSpans, verticalGrid, horizontalGrid, components))
                         {
                             horizontalGrid[height - 1] = horizontalSpans;
+                            horizontalGrid[height] = (int)Math.Pow(2, _width) - 1;
                             return (verticalGrid, horizontalGrid);
                         }
                     }

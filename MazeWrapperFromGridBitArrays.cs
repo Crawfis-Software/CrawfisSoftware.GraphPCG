@@ -32,13 +32,20 @@ namespace CrawfisSoftware.PCG
                 {
                     if ((verticalBits & 1) == 1)
                     {
-                        mazeBuilder.CarvePassage(i + horizontalOffset, row + verticalOffset, i + horizontalOffset, row + 1 + verticalOffset);
+                        mazeBuilder.CarvePassage(i + horizontalOffset, row + verticalOffset, i + horizontalOffset,
+                            row + 1 + verticalOffset);
                     }
 
                     verticalBits >>= 1;
                 }
 
-                int horizontalBits = horizontalPaths[row];
+                row++;
+            }
+
+            row = 0;
+            foreach(int passages in horizontalPaths)
+            {
+                int horizontalBits = passages;
                 for (int i = 0; i < mazeBuilder.Width; i++)
                 {
                     if ((horizontalBits & 1) == 1)
