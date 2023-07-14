@@ -269,13 +269,13 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         /// <param name="width"> Maximum number of digits permitted in a bit pattern</param>
         /// <param name="random"> Random number generator </param>
-        ///         /// <param name="setBits"> Pre-set bits in the bit pattern</param>
+        /// <param name="setBitPos"> A list of pre-set bit position in the bit pattern</param>
         /// <returns></returns>
-        public static int RandomOddBitPattern(int width, Random random, int[] setBits = null)
+        public static int RandomOddBitPattern(int width, Random random, int[] setBitPos = null)
         {
             int max = (int) Math.Pow(2, width);
             int bitPattern = random.Next(max);
-            while (CountSetBits(bitPattern) % 2 == 0 && AreBitsSet(bitPattern, setBits))
+            while (CountSetBits(bitPattern) % 2 == 0 && (setBitPos != null && AreBitsSet(bitPattern, setBitPos)))
             {
                 bitPattern = random.Next(max);
             }
@@ -288,13 +288,13 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         /// <param name="width"> Maximum number of digits permitted in a bit pattern</param>
         /// <param name="random"> Random number generator </param>
-        /// <param name="setBits"> Pre-set bits in the bit pattern</param>
+        /// <param name="setBitPos"> A list of pre-set bit position in the bit pattern</param>
         /// <returns></returns>
-        public static int RandomEvenBitPattern(int width, Random random, int[] setBits = null)
+        public static int RandomEvenBitPattern(int width, Random random, int[] setBitPos = null)
         {
             int max = (int) Math.Pow(2, width);
             int bitPattern = random.Next(max);
-            while (CountSetBits(bitPattern) % 2 != 0 && AreBitsSet(bitPattern, setBits))
+            while (CountSetBits(bitPattern) % 2 == 0 && (setBitPos != null && AreBitsSet(bitPattern, setBitPos)))
             {
                 bitPattern = random.Next(max);
             }
