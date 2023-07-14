@@ -71,7 +71,7 @@ namespace CrawfisSoftware.Utility
         public static T EnumFlagUnion<T>(this IEnumerable<T> values) where T : struct, IConvertible
         {
             if (!typeof(T).IsEnum)
-                throw new ArgumentException("T must be of type Enum and must be have an attribute of Flag.");
+                throw new ArgumentException("E must be of type Enum and must be have an attribute of Flag.");
 
             int builtValue = 0;
             foreach (T value in Enum.GetValues(typeof(T)))
@@ -98,7 +98,7 @@ namespace CrawfisSoftware.Utility
         public static IEnumerable<T> EnumFlagSubsets<T>(this T flags) where T : struct, IConvertible
         {
             if (!typeof(T).IsEnum)
-                throw new ArgumentException("T must be of type Enum and must be have an attribute of Flag.");
+                throw new ArgumentException("E must be of type Enum and must be have an attribute of Flag.");
 
             int inputInt = (int)(object)(T)flags;
             foreach (T value in Enum.GetValues(typeof(T)))

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CrawfisSoftware.Collections.Graph;
+using System;
 using System.Text;
 
 namespace CrawfisSoftware.PCG
@@ -8,7 +9,8 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     public class CellularAutomata
     {
-        private bool[,] cells;
+        private OccupancyGrid _occupancyGridFrontBuffer;
+        private OccupancyGrid _occupancyGridBackBuffer;
         private readonly Random randomGenerator;
 
         /// <summary>
@@ -60,7 +62,25 @@ namespace CrawfisSoftware.PCG
         {
             Width = width;
             Height = height;
-            cells = new bool[height, width];
+            _occupancyGridFrontBuffer = new OccupancyGrid(width, height);
+            _occupancyGridBackBuffer = new OccupancyGrid(width, height);
+            randomGenerator = random;
+            if (random == null)
+                randomGenerator = new System.Random();
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="width">The number of columns.</param>
+        /// <param name="height">The number of rows.</param>
+        /// <param name="random">A random number generator. If null, a new one will be created.</param>
+        public CellularAutomata(OccupancyGrid occupancyGrid, Random random = null)
+        {
+            _occupancyGridFrontBuffer = occupancyGrid;
+            Width = occupancyGrid.Width;
+            Height = occupancyGrid.Height;
+            _occupancyGridBackBuffer = new OccupancyGrid(Width, Height);
             randomGenerator = random;
             if (random == null)
                 randomGenerator = new System.Random();
@@ -70,17 +90,36 @@ namespace CrawfisSoftware.PCG
         /// Utility function to initialize or add noise.
         /// </summary>
         /// <param name="threshold">Values above this threshold will be set to true.</param>
-        public void AddNoise(float threshold = 0.5f)
+        public void AddTrueNoise(float threshold = 0.5f)
         {
-            for(int column = 0; column < Width; column++)
+            for (int column = 0; column < Width; column++)
             {
-                for(int row = 0; row < Height; row++)
+                for (int row = 0; row < Height; row++)
                 {
-                    float randomValue = (float) randomGenerator.NextDouble();
-                    if(randomValue > threshold)
+                    float randomValue = (float)randomGenerator.NextDouble();
+                    if (randomValue > threshold)
                     {
-                        cells[row, column] = true;
-                    }    
+                        _occupancyGridFrontBuffer.MarkCell(column, row, true);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Utility function to initialize or add noise.
+        /// </summary>
+        /// <param name="threshold">Values above this threshold will be set to false.</param>
+        public void AddFalseNoise(float threshold = 0.5f)
+        {
+            for (int column = 0; column < Width; column++)
+            {
+                for (int row = 0; row < Height; row++)
+                {
+                    float randomValue = (float)randomGenerator.NextDouble();
+                    if (randomValue > threshold)
+                    {
+                        _occupancyGridFrontBuffer.MarkCell(column, row, false);
+                    }
                 }
             }
         }
@@ -96,26 +135,35 @@ namespace CrawfisSoftware.PCG
                 PreIterationFunc(iteration);
                 for (int column = 0; column < Width; column++)
                 {
-                    for (int row = 0; row < Height; row++)
+                    for (int row = Height-1; row >= 0; row--)
                     {
                         int numberOfNeighbors = GetNeighborsAndCount(row, column, out int numberTrue);
-                        if(cells[row, column])
-                            cells[row, column] = AutomataForTrueCells(row, column, iteration, numberTrue, numberOfNeighbors);
+                        if (_occupancyGridFrontBuffer.GetNodeLabel(column, row))
+                        {
+                            bool newValue = AutomataForTrueCells(row, column, iteration, numberTrue, numberOfNeighbors);
+                            _occupancyGridBackBuffer.MarkCell(column, row, newValue);
+                        }
                         else
-                            cells[row, column] = AutomataForFalseCells(row, column, iteration, numberTrue, numberOfNeighbors);
+                        {
+                            bool newValue = AutomataForFalseCells(row, column, iteration, numberTrue, numberOfNeighbors);
+                            _occupancyGridBackBuffer.MarkCell(column, row, newValue);
+                        }
                     }
                 }
                 PostIterationFunc(iteration);
+                var tmp = _occupancyGridFrontBuffer;
+                _occupancyGridFrontBuffer = _occupancyGridBackBuffer;
+                _occupancyGridBackBuffer = tmp;
             }
         }
 
         /// <summary>
-        /// Return the array (reference) of the cellular automata
+        /// Return the OccupancyGrid of the cellular automata
         /// </summary>
         /// <returns></returns>
-        public bool[,] GetCells()
+        public OccupancyGrid GetOccupanceGrid()
         {
-            return cells;
+            return _occupancyGridFrontBuffer;
         }
 
         private int GetNeighborsAndCount(int row, int column, out int numberTrue)
@@ -135,7 +183,7 @@ namespace CrawfisSoftware.PCG
                 {
                     if (columnIndex == column && rowIndex == row)
                         continue;
-                    if (cells[rowIndex, columnIndex])
+                    if (_occupancyGridFrontBuffer.GetNodeLabel(columnIndex, rowIndex))
                         numberTrue++;
                 }
             }
@@ -148,25 +196,10 @@ namespace CrawfisSoftware.PCG
         /// <returns>A string</returns>
         public override string ToString()
         {
-            StringBuilder caString = new StringBuilder(Width);
-            string openCell = ".";
-            string closedCell = "#";
-            // For each row we will have two strings.
-            for (int row = Height - 1; row >= 0; row--)
-            {
-                for (int column = 0; column < Width; column++)
-                {
-                    if (cells[row, column])
-                        caString.Append(closedCell);
-                    else
-                        caString.Append(openCell);
-                }
-                caString.AppendLine();
-            }
-            return caString.ToString();
+            return _occupancyGridFrontBuffer.ToString();
         }
 
-        private static int defaultKeepWallThreshold = 4;
+        private static int defaultKeepWallThreshold = 0;
         private static int defaultRemoveWallThreshold = 2;
         private static int neighborsInKernel = 8;
         private static bool DefaultAutomataIfTrue(int row, int column, int iteration, int numberTrue, int numberOfNeighbors)
@@ -183,6 +216,8 @@ namespace CrawfisSoftware.PCG
         private static int defaultTurnIntoWallThreshold = 5;
         private static bool DefaultAutomataIfFalse(int row, int column, int iteration, int numberTrue, int numberOfNeighbors)
         {
+            if (numberOfNeighbors < neighborsInKernel) // Valid for neighborhood size of 1
+                return false; // keep edges
             if (numberOfNeighbors < neighborsInKernel)
                 return true;
             if (numberTrue >= defaultTurnIntoWallThreshold)
