@@ -9,9 +9,9 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     public class CellularAutomata
     {
-        private OccupancyGrid _occupancyGridFrontBuffer;
-        private OccupancyGrid _occupancyGridBackBuffer;
-        private readonly Random randomGenerator;
+        protected OccupancyGrid _occupancyGridFrontBuffer;
+        protected OccupancyGrid _occupancyGridBackBuffer;
+        protected readonly Random randomGenerator;
 
         /// <summary>
         /// Get the number of columns in the cellular automata
@@ -135,12 +135,12 @@ namespace CrawfisSoftware.PCG
                 PreIterationFunc(iteration);
                 for (int column = 0; column < Width; column++)
                 {
-                    for (int row = Height-1; row >= 0; row--)
+                    for (int row = 0; row < Height ; row++)
                     {
-                        int numberOfNeighbors = GetNeighborsAndCount(row, column, out int numberTrue);
+                        int numberOfNeighbors = GetNeighborsAndCount(column, row, out int numberTrue);
                         if (_occupancyGridFrontBuffer.GetNodeLabel(column, row))
                         {
-                            bool newValue = AutomataForTrueCells(row, column, iteration, numberTrue, numberOfNeighbors);
+                            bool newValue = AutomataForTrueCells(column, row, iteration, numberTrue, numberOfNeighbors);
                             _occupancyGridBackBuffer.MarkCell(column, row, newValue);
                         }
                         else
@@ -166,7 +166,7 @@ namespace CrawfisSoftware.PCG
             return _occupancyGridFrontBuffer;
         }
 
-        private int GetNeighborsAndCount(int row, int column, out int numberTrue)
+        protected int GetNeighborsAndCount(int column, int row, out int numberTrue)
         {
             int rowMin = Math.Max(0,row-NeighborhoodSize);
             int rowMax = Math.Min(Height - 1, row + NeighborhoodSize);
@@ -202,7 +202,7 @@ namespace CrawfisSoftware.PCG
         private static int defaultKeepWallThreshold = 0;
         private static int defaultRemoveWallThreshold = 2;
         private static int neighborsInKernel = 8;
-        private static bool DefaultAutomataIfTrue(int row, int column, int iteration, int numberTrue, int numberOfNeighbors)
+        private static bool DefaultAutomataIfTrue(int column, int row, int iteration, int numberTrue, int numberOfNeighbors)
         {
             if (numberOfNeighbors < neighborsInKernel) // Valid for neighborhood size of 1
                 return true; // Wall at all edges
@@ -214,7 +214,7 @@ namespace CrawfisSoftware.PCG
         }
 
         private static int defaultTurnIntoWallThreshold = 5;
-        private static bool DefaultAutomataIfFalse(int row, int column, int iteration, int numberTrue, int numberOfNeighbors)
+        private static bool DefaultAutomataIfFalse(int column, int row, int iteration, int numberTrue, int numberOfNeighbors)
         {
             if (numberOfNeighbors < neighborsInKernel) // Valid for neighborhood size of 1
                 return false; // keep edges
