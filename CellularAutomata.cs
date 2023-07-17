@@ -1,6 +1,5 @@
 ﻿using CrawfisSoftware.Collections.Graph;
 using System;
-using System.Text;
 
 namespace CrawfisSoftware.PCG
 {
@@ -166,6 +165,14 @@ namespace CrawfisSoftware.PCG
             return _occupancyGridFrontBuffer;
         }
 
+        /// <summary>
+        /// Count the total number of neighbors under the cell with a box of NeighborhoodSize. Also count the number of those cells that are true.
+        /// </summary>
+        /// <param name="column">The center column.</param>
+        /// <param name="row">The center row.</param>
+        /// <param name="numberTrue">Outputs the number of true values under the kernel.</param>
+        /// <returns>Outputs the total number of cells under the kernel. This will be the kernel size except near boundaries.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Throws an exception if the filter size or column / row are wrong.</exception>
         protected int GetNeighborsAndCount(int column, int row, out int numberTrue)
         {
             int rowMin = Math.Max(0,row-NeighborhoodSize);
