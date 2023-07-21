@@ -121,7 +121,7 @@ namespace CrawfisSoftware.PCG
         /// first passing in a value of true. New walkers would be
         /// spawned on each invocation.
         /// </summary>
-        /// <param name="preserveExistingCells">If true, cells with existing
+        /// <param name="preserveExistingCells">If true, _occupied with existing
         /// values already set will not be affected.</param>
         public override void CreateMaze(bool preserveExistingCells = false)
         {

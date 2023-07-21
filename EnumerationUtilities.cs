@@ -231,7 +231,6 @@ namespace CrawfisSoftware.PCG
                     newOutflowComponents[i] = componentRemap[componentNum];
                 }
             }
-            //components = newOutflowComponents;
             return isValid;
         }
         
@@ -270,33 +269,35 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         /// <param name="width"> Maximum number of digits permitted in a bit pattern</param>
         /// <param name="random"> Random number generator </param>
+        /// <param name="setBit"> Pre-set bit in the bit pattern</param>
         /// <returns></returns>
-        public static short RandomOddBitPattern(int width, Random random)
+        public static int RandomOddBitPattern(int width, Random random, int setBit = 0)
         {
             int max = (int) Math.Pow(2, width);
-            short bitPattern = (short)random.Next(max);
-            while (CountSetBits(bitPattern) % 2 == 0)
+            int bitPattern;
+            do
             {
-                bitPattern = (short)random.Next(max);
-            }
+                bitPattern = random.Next(max) | setBit;
+            } while (CountSetBits(bitPattern) % 2 == 0);
 
             return bitPattern;
         }
-        
+
         /// <summary>
         /// Generate a random bit pattern with an even number of set bits under given width
         /// </summary>
         /// <param name="width"> Maximum number of digits permitted in a bit pattern</param>
         /// <param name="random"> Random number generator </param>
+        /// <param name="setBit"> Pre-set bit in the bit pattern</param>
         /// <returns></returns>
-        public static short RandomEvenBitPattern(int width, Random random)
+        public static int RandomEvenBitPattern(int width, Random random, int setBit = 0)
         {
             int max = (int) Math.Pow(2, width);
-            short bitPattern = (short)random.Next(max);
-            while (CountSetBits(bitPattern) % 2 != 0)
+            int bitPattern;
+            do
             {
-                bitPattern = (short)random.Next(max);
-            }
+                bitPattern = random.Next(max) | setBit;
+            } while (CountSetBits(bitPattern) % 2 != 0);
 
             return bitPattern;
         }
@@ -310,5 +311,12 @@ namespace CrawfisSoftware.PCG
         {
             return list.Distinct().Count();
         }
+        
+        public static bool IsBitSet(int b, int pos)
+        {
+            return (b & (1 << pos)) != 0;
+        }
+
+
     }
 }

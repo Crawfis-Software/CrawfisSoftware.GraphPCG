@@ -20,28 +20,39 @@ namespace CrawfisSoftware.PCG
         /// indicate a passage should be carved to the next row (i,j)->(i,j+1). Bits are read right to left as the grid goes left to right.</param>
         /// <param name="horizontalPaths">A list of rows, where each row has a bitpattern. 1's in the bit pattern 
         /// indicate a passage should be carved to the next cell (i,j)->(i+1,j). Bits are read right to left as the grid goes left to right.</param>
-        public static void CarvePath(MazeBuilderAbstract<int,int> mazeBuilder, IList<int> verticalPaths, IList<int> horizontalPaths)
+        public static void CarvePath(MazeBuilderAbstract<int, int> mazeBuilder, IList<int> verticalPaths,
+            IList<int> horizontalPaths, int verticalOffset = 0, int horizontalOffset = 0)
+
         {
             int row = 0;
-            foreach(int passages in verticalPaths)
+            foreach (int passages in verticalPaths)
             {
                 int verticalBits = passages;
-                for(int i=0; i < mazeBuilder.Width; i++)
+                for (int i = 0; i < mazeBuilder.Width; i++)
                 {
-                    if((verticalBits & 1) == 1)
+                    if ((verticalBits & 1) == 1)
                     {
-                        mazeBuilder.CarvePassage(i, row, i, row + 1);
+                        mazeBuilder.CarvePassage(i + horizontalOffset, row + verticalOffset, i + horizontalOffset,
+                            row + 1 + verticalOffset);
                     }
+
                     verticalBits >>= 1;
                 }
 
-                int horizontalBits = horizontalPaths[row];
+                row++;
+            }
+
+            row = 0;
+            foreach(int passages in horizontalPaths)
+            {
+                int horizontalBits = passages;
                 for (int i = 0; i < mazeBuilder.Width; i++)
                 {
                     if ((horizontalBits & 1) == 1)
                     {
-                        mazeBuilder.CarvePassage(i, row, i+1, row);
+                        mazeBuilder.CarvePassage(i + horizontalOffset, row + verticalOffset, i + 1 + horizontalOffset, row + verticalOffset);
                     }
+
                     horizontalBits >>= 1;
                 }
 

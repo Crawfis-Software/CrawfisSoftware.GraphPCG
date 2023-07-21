@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -7,17 +7,15 @@ using static CrawfisSoftware.PCG.EnumerationUtilities;
 
 namespace CrawfisSoftware.PCG
 {
-    /// <summary>
-    /// Class to sample a path from top to bottom.
-    /// </summary>
-    public class PathSamplerBottomToTop
+    public class LoopSamplerBottomToTop
     {
+        
         private const int MaxDefaultAttempts = 10000;
         private readonly int _width;
         private readonly int _height;
         private readonly Random _random;
-        private readonly Validator _verticalCandidateOracle;
-        private readonly Validator _horizontalCandidateOracle;
+        private readonly EnumerationUtilities.Validator _verticalCandidateOracle;
+        private readonly EnumerationUtilities.Validator _horizontalCandidateOracle;
 
 
         /// <summary>
@@ -31,23 +29,23 @@ namespace CrawfisSoftware.PCG
         /// the current candidate row value (vertical bits), all verticalBits so far, all horizontal bits so far, all components so far</param>
         /// <param name="horizontalCandidateOracle">Function that returns true or false whether this row is desired. Parameters are: the pathID, the row number,
         /// the current candidate value (horizontal bits), all verticalBits so far, all horizontal bits so far, all components so far.</param>
-        public PathSamplerBottomToTop(int width, int height, Random random,
-            Func<int, bool> globalConstraintsOracle = null, Validator verticalCandidateOracle = null,
-            Validator horizontalCandidateOracle = null)
+        public LoopSamplerBottomToTop(int width, int height, Random random,
+            Func<int, bool> globalConstraintsOracle = null, EnumerationUtilities.Validator verticalCandidateOracle = null,
+            EnumerationUtilities.Validator horizontalCandidateOracle = null)
         {
             this._width = width;
-            this._height = height + 1;
+            this._height = height - 1;
             this._random = random;
             this._verticalCandidateOracle = verticalCandidateOracle;
             this._horizontalCandidateOracle = horizontalCandidateOracle;
 
             if (globalConstraintsOracle == null)
             {
-                ValidPathRowEnumerator.BuildOddTables(width);
+                ValidPathRowEnumerator.BuildEvenTables(width);
             }
             else
             {
-                ValidPathRowEnumerator.BuildOddTablesWithConstraints(width, globalConstraintsOracle);
+                ValidPathRowEnumerator.BuildEvenTablesWithConstraints(width, globalConstraintsOracle);
             }
         }
 
@@ -58,20 +56,26 @@ namespace CrawfisSoftware.PCG
         /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
 
         /// <returns>A value tuple of a list of vertical bits and a list of horizontal bits.</returns>
-        public (IList<int> vertical, IList<int> horizontal) Sample(int start, int end)
+        public (IList<int> vertical, IList<int> horizontal) Sample()
         {
             int pathID = 0;
-            var inFlow = new List<int>() { start };
             var verticalPaths = new int[_height];
-            var horizontalPaths = new int[_height];
+            var horizontalPaths = new int[_height + 1];
             int[][] components = new int[_height][];
             for (int i = 0; i < _height; i++)
                 components[i] = new int[_width];
-            components[0][start] = 1;
-            verticalPaths[0] = 1 << start; // row;
-            int endRow = 1 << end;
-            verticalPaths[_height - 1] = endRow;
+
+            for (int i = 0; i < _width; i++)
+                components[0][i] = 1;
+                    
             
+            verticalPaths[0] = (int)Math.Pow(2, _width -1) + 1; // row;
+            horizontalPaths[0] = (int)Math.Pow(2, _width) - 1;
+            
+            verticalPaths[_height - 1] = (int)Math.Pow(2, _width -1) + 1; // row;
+
+            //int endRow = verticalPaths[0];
+            //verticalPaths[_height - 1] = endRow;
             int attempt = 0;
             while (attempt < MaxDefaultAttempts)
             {
@@ -85,7 +89,7 @@ namespace CrawfisSoftware.PCG
                     attempt++;
                 }
             }
-            throw new Exception("Unable to find a path");
+            throw new Exception("Unable to form a loop");
 
         }
 
@@ -93,10 +97,11 @@ namespace CrawfisSoftware.PCG
         private (IList<int> vertical, IList<int> horizontal) SampleRecursive(int width, int height, int index,
             IList<int> verticalGrid, IList<int> horizontalGrid,
             IList<IList<int>> components, int pathID,
-            Validator rowCandidateOracle = null,
-            Validator horizontalCandidateOracle = null)
+            EnumerationUtilities.Validator rowCandidateOracle = null,
+            EnumerationUtilities.Validator horizontalCandidateOracle = null)
         {
             int horizontalSpans;
+            
             if (index == (height - 2))
             {
                 int lastRowAttempts = 0;
@@ -109,18 +114,8 @@ namespace CrawfisSoftware.PCG
                                 horizontalSpans, verticalGrid, horizontalGrid, components))
                         {
                             horizontalGrid[height - 1] = horizontalSpans;
-                            
-                            var verticalPaths = new int[_height -1];
-                            var horizontalPaths = new int[_height -1];
-                            // Shift Everything by 1 with new grid
-                             for (int i = 0; i < _height - 1; i++)
-                             {
-                                 verticalPaths[i] = verticalGrid[i + 1];
-                                 horizontalPaths[i] = horizontalGrid[i + 1];
-                             }
-
-
-                             return (verticalPaths, horizontalPaths);
+                            horizontalGrid[height] = (int)Math.Pow(2, _width) - 1;
+                            return (verticalGrid, horizontalGrid);
                         }
                     }
 
