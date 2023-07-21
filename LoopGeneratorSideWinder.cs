@@ -15,7 +15,18 @@ namespace CrawfisSoftware.PCG
         /// Get or set the maximum horizontal passage length used in the default
         /// PickNextColumn function.
         /// </summary>
-        public int MaxSpanWidth { get; set; } = 15;
+        public int MaxSpanWidth { get; set; } = 25;
+
+        /// <summary>
+        /// Get or set the number of rows that should be vertical spans before any turns. This is used in the default
+        /// PickNextColumn function.
+        /// </summary>
+        public int MinVerticalSpan { get; private set; } = 2;
+        /// <summary>
+        /// Get or set the number of rows that should be vertical spans before any turns. This is used in the default
+        /// PickNextColumn function.
+        /// </summary>
+        public int MinLeftToRightSpacing { get; private set; } = 3;
 
         /// <summary>
         /// Get or set the a function to determine on a per row basis the exact column
@@ -23,7 +34,6 @@ namespace CrawfisSoftware.PCG
         /// right of the previous column at most MaxSpanWidth away.
         /// </summary>
         public Func<int, int, int, System.Random, (int, int)> PickNextColumns { get; set; }
-        public int MinVerticalSpan { get; private set; } = 3;
 
         private int _lastRow = -99;
         private (int, int) DefaultPickNextColumnsFunc(int row, int previousLeftColumn, int previousRightColumn, System.Random randomGenerator = null)
@@ -34,13 +44,16 @@ namespace CrawfisSoftware.PCG
             int delta = RandomGenerator.Next(MaxSpanWidth+1);
             int sign = RandomGenerator.Next(2) == 1 ? 1 : -1;
             int newLeftColumn = previousLeftColumn + sign * delta;
-            if (newLeftColumn > Width / 3) newLeftColumn = previousLeftColumn - sign * delta;
+            if (newLeftColumn > Width - 1 - MinLeftToRightSpacing) newLeftColumn = Width - 1 - MinLeftToRightSpacing - RandomGenerator.Next(5);
+            if (newLeftColumn > previousRightColumn- MinLeftToRightSpacing) newLeftColumn = previousRightColumn - MinLeftToRightSpacing;
             if (newLeftColumn < 0) newLeftColumn = previousLeftColumn - sign * delta;
-            if (newLeftColumn > Width / 3) newLeftColumn = Width / 3;
+            if (newLeftColumn > previousRightColumn - MinLeftToRightSpacing) newLeftColumn = previousRightColumn - MinLeftToRightSpacing;
             delta = RandomGenerator.Next(MaxSpanWidth + 1);
             sign = RandomGenerator.Next(2) == 1 ? 1 : -1;
             int newRightColumn = previousRightColumn + sign * delta;
-            if(newRightColumn <= 2*Width/3) newRightColumn = 2*Width/3;
+            if (newRightColumn < newLeftColumn + MinLeftToRightSpacing) newRightColumn = newLeftColumn + MinLeftToRightSpacing;
+            if (newRightColumn < previousLeftColumn + MinLeftToRightSpacing) newRightColumn = previousLeftColumn + MinLeftToRightSpacing;
+            if (newRightColumn >= Width) newRightColumn = Width - 1;
             return (newLeftColumn, newRightColumn);
         }
 
