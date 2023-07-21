@@ -12,7 +12,7 @@ namespace CrawfisSoftware.PCG
     /// Generate a path from the start column on the bottom row to the end column
     /// on the top row.
     /// </summary>
-    public class PathGeneratorSideWinder : MazeBuilderAbstract<int, int>
+    public class PathGeneratorSideWinder<N, E> : MazeBuilderAbstract<N, E>
     {
         /// <summary>
         /// Get or set the maximum horizontal passage length used in the default
@@ -62,8 +62,18 @@ namespace CrawfisSoftware.PCG
         /// <param name="height">The height of the desired maze</param>
         /// <param name="nodeAccessor">A function to retrieve any node labels</param>
         /// <param name="edgeAccessor">A function to retrieve any edge weights</param>
-        public PathGeneratorSideWinder(int width, int height, GetGridLabel<int> nodeAccessor = null, GetEdgeLabel<int> edgeAccessor = null)
+        public PathGeneratorSideWinder(int width, int height, GetGridLabel<N> nodeAccessor = null, GetEdgeLabel<E> edgeAccessor = null)
             : base(width, height, nodeAccessor, edgeAccessor)
+        {
+            this.PickNextColumn = DefaultPickNextColumnFunc;
+            this.PickNextRow = DefaultPickNextRowFunc;
+        }
+
+        /// <summary>
+        /// Constructor. Takes an existing maze builder (derived from MazeBuilderAbstract) and copies the state over.
+        /// </summary>
+        /// <param name="mazeBuilder">Previous MazeBuilderAbstract on which to build upon.</param>
+        public PathGeneratorSideWinder(MazeBuilderAbstract<N, E> mazeBuilder) : base(mazeBuilder)
         {
             this.PickNextColumn = DefaultPickNextColumnFunc;
             this.PickNextRow = DefaultPickNextRowFunc;

@@ -1,7 +1,7 @@
 ﻿using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Collections.Maze;
+using System;
 using System.Collections.Generic;
-
 
 namespace CrawfisSoftware.PCG
 {
@@ -9,183 +9,90 @@ namespace CrawfisSoftware.PCG
     /// Generate a random loop on a grid that consists of two paths that merge at
     /// the bottom row and top row.
     /// </summary>
-    public class LoopGeneratorSideWinder : MazeBuilderAbstract<int, int>
+    public class LoopGeneratorSideWinder<N, E> : MazeBuilderAbstract<N, E>
     {
-        // Todo: rewrite folloing the structure of PathGeneratorSidewinder. This could was trying 
-        //   to make more general paths and has been replaced with PathGenerator.
-        // Todo: Add Properties or functions for:
-        //    min and max horizontal span width
-        //        - per row? 
-        //        - per left  versus per right
-        //    Initial row span
-        //    Max left edge per row (could be zero to force to edge)
-        //    Min right edge per row (could be Width-1 to force to edge)
-        //    Bool on whether to allow "overlap" between rows (or int for minimum spread)
-        int[] rowValues;
-        int[] newRowValues;
-        int currentNumberOfComponents = 0;
-        int currentNewComponentNumber = 0;
-        int currentRow = 0;
-        List<int> spanEndPoints = new List<int>();
-        List<int> newSpanEndPoints = new List<int>();
+        /// <summary>
+        /// Get or set the maximum horizontal passage length used in the default
+        /// PickNextColumn function.
+        /// </summary>
+        public int MaxSpanWidth { get; set; } = 15;
+
+        /// <summary>
+        /// Get or set the a function to determine on a per row basis the exact column
+        /// the curve should shift over to. Defaults to a random column to the left or
+        /// right of the previous column at most MaxSpanWidth away.
+        /// </summary>
+        public Func<int, int, int, System.Random, (int, int)> PickNextColumns { get; set; }
+        public int MinVerticalSpan { get; private set; } = 3;
+
+        private int _lastRow = -99;
+        private (int, int) DefaultPickNextColumnsFunc(int row, int previousLeftColumn, int previousRightColumn, System.Random randomGenerator = null)
+        {
+            if(row < _lastRow + MinVerticalSpan) return (previousLeftColumn, previousRightColumn);
+            _lastRow = row;
+            //return (0, Width - 1);
+            int delta = RandomGenerator.Next(MaxSpanWidth+1);
+            int sign = RandomGenerator.Next(2) == 1 ? 1 : -1;
+            int newLeftColumn = previousLeftColumn + sign * delta;
+            if (newLeftColumn > Width / 3) newLeftColumn = previousLeftColumn - sign * delta;
+            if (newLeftColumn < 0) newLeftColumn = previousLeftColumn - sign * delta;
+            if (newLeftColumn > Width / 3) newLeftColumn = Width / 3;
+            delta = RandomGenerator.Next(MaxSpanWidth + 1);
+            sign = RandomGenerator.Next(2) == 1 ? 1 : -1;
+            int newRightColumn = previousRightColumn + sign * delta;
+            if(newRightColumn <= 2*Width/3) newRightColumn = 2*Width/3;
+            return (newLeftColumn, newRightColumn);
+        }
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="width">The width of the desired maze</param>
         /// <param name="height">The height of the desired maze</param>
-        public LoopGeneratorSideWinder(int width, int height) : base(width, height)
+        /// <param name="nodeAccessor">A function to retrieve any node labels</param>
+        /// <param name="edgeAccessor">A function to retrieve any edge weights</param>
+        public LoopGeneratorSideWinder(int width, int height, GetGridLabel<N> nodeAccessor = null, GetEdgeLabel<E> edgeAccessor = null) : base(width, height, nodeAccessor, edgeAccessor)
         {
-            InitializeTempData();
+            this.PickNextColumns = DefaultPickNextColumnsFunc;
         }
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="mazeBuilder">Previous MazeBuilderAbstract on which to build upon.</param>
-        public LoopGeneratorSideWinder(MazeBuilderAbstract<int, int> mazeBuilder) : base(mazeBuilder)
+        public LoopGeneratorSideWinder(MazeBuilderAbstract<N, E> mazeBuilder) : base(mazeBuilder)
         {
-            InitializeTempData();
-        }
-
-        private void InitializeTempData()
-        {
-            rowValues = new int[Width];
-            newRowValues = new int[Width];
+            this.PickNextColumns = DefaultPickNextColumnsFunc;
         }
 
         /// <inheritdoc/>
-        public override void CreateMaze(bool preserveExistingCells)
+        public override void CreateMaze(bool preserveExistingCells = true)
         {
-            CreateBaseRow(1);
-            currentNewComponentNumber = currentNumberOfComponents;
-            for (int row = 1; row < Height - 1; row++)
+            (int lastLeftColumn, int lastRightColumn) = PickNextColumns(0, 0, Width-1, RandomGenerator);
+            lastLeftColumn = (lastLeftColumn < 0) ? 0 : lastLeftColumn;
+            lastLeftColumn = (lastLeftColumn >= lastRightColumn) ? lastRightColumn - 1 : lastLeftColumn;
+            lastRightColumn = (lastRightColumn < lastLeftColumn) ? lastLeftColumn + 1 : lastRightColumn;
+            lastRightColumn = (lastRightColumn >= Width) ? Width - 1 : lastRightColumn;
+            CarveHorizontalSpan(0, lastLeftColumn, lastRightColumn, preserveExistingCells);
+            for (int row = 1; row < Height-1; row++)
             {
-                currentRow++;
-                CreateNextRow(2);
-                int[] tempSwapArray = rowValues;
-                rowValues = newRowValues;
-                newRowValues = tempSwapArray;
-                List<int> tempSwap = spanEndPoints;
-                spanEndPoints = newSpanEndPoints;
-                newSpanEndPoints = tempSwap;
-                newSpanEndPoints.Clear();
-                for (int i = 0; i < newRowValues.Length; i++)
-                    newRowValues[i] = 0;
-            }
-            currentRow++;
-            CloseTopOfLoop();
-        }
+                CarveVerticalSpan(lastLeftColumn, row - 1, row, preserveExistingCells);
+                CarveVerticalSpan(lastRightColumn, row - 1, row, preserveExistingCells);
+                (int leftColumn, int rightColumn) = PickNextColumns(row, lastLeftColumn, lastRightColumn, RandomGenerator);
+                leftColumn = (leftColumn < 0) ? 0 : leftColumn;
+                leftColumn = (leftColumn >= lastRightColumn) ? lastRightColumn - 1 : leftColumn;
+                CarveHorizontalSpan(row, lastLeftColumn, leftColumn, preserveExistingCells);
+                lastLeftColumn = leftColumn;
 
-        private void CloseTopOfLoop()
-        {
-            int start = spanEndPoints[0];
-            int end = spanEndPoints[spanEndPoints.Count - 1];
-            for (int i = start; i < end; i++)
-            {
-                CarvePassage(i + currentRow * Width, i + currentRow * Width + 1);
+                rightColumn = (rightColumn < leftColumn) ? leftColumn + 1 : rightColumn;
+                rightColumn = (rightColumn >= Width) ? Width - 1 : rightColumn;
+                CarveHorizontalSpan(row, lastRightColumn, rightColumn, preserveExistingCells);
+                lastRightColumn = rightColumn;
             }
-        }
-
-        private void CreateBaseRow(int numberOfSpans)
-        {
-            int spanLength = Width - 2 * numberOfSpans;
-            int lastPoint = -1;
-            for (int i = 0; i < numberOfSpans * 2; i++)
-            {
-                int nextPoint = this.RandomGenerator.Next(spanLength) + lastPoint + 1;
-                spanEndPoints.Add(nextPoint);
-                lastPoint = nextPoint;
-                spanLength = Width - lastPoint - (2 * numberOfSpans - i - 1);
-            }
-            spanEndPoints.Sort();
-            int component = 1;
-            for (int i = 0; i < spanEndPoints.Count; i += 2)
-            {
-                int start = spanEndPoints[i];
-                CarvePassage(start, start + Width);
-                int end = spanEndPoints[i + 1];
-                CarvePassage(end, end + Width);
-                rowValues[end] = component;
-                for (int j = start; j < end; j++)
-                {
-                    rowValues[j] = component;
-                    CarvePassage(j, j + 1);
-                }
-                component++;
-            }
-        }
-        private void CreateNextRow(int desiredNumberOfComponents)
-        {
-            int lastEnd = -1;
-            spanEndPoints.Add(Width);
-            for (int i = 0; i < spanEndPoints.Count - 1; i++)
-            {
-                int start = spanEndPoints[i];
-                int next = spanEndPoints[i + 1];
-                //if (desiredNumberOfComponents > currentNumberOfComponents)
-                //{
-                //    lastEnd = AddNewSpan(lastEnd + 1, start - 1);
-                //}
-                //if(rowValues[start] == componentToTryToRemove)
-                //{
-                //    // Component logic is broken here. Will try to fix later.
-                //    lastEnd = next;
-                //    i++;
-                //    continue;
-                //}
-                // Pick a random location to move up for start.
-                int spanWidth = next - lastEnd - 2;
-                spanWidth = spanWidth > 0 ? spanWidth : 0;
-                int newConnection = this.RandomGenerator.Next(spanWidth) + lastEnd + 1;
-                newSpanEndPoints.Add(newConnection);
-                int component = rowValues[start];
-                newRowValues[newConnection] = component;
-                CarvePassage(newConnection + currentRow * Width, newConnection + Width + currentRow * Width);
-                if (newConnection > start)
-                {
-                    for (int cell = start; cell < newConnection; cell++)
-                    {
-                        CarvePassage(cell + currentRow * Width, cell + 1 + currentRow * Width);
-                        newRowValues[cell] = component;
-                    }
-                    lastEnd = newConnection;
-                }
-                else
-                {
-                    for (int cell = newConnection; cell < start; cell++)
-                    {
-                        CarvePassage(cell + currentRow * Width, cell + 1 + currentRow * Width);
-                        newRowValues[cell] = component;
-                    }
-                    lastEnd = start;
-                }
-            }
-        }
-
-        private int AddNewSpan(int start, int end)
-        {
-            int maxSpanLength = end - start;
-            if (maxSpanLength < 1) return start - 1;
-            int newSpanStart = this.RandomGenerator.Next(maxSpanLength - 1) + start;
-            int newSpanEnd = this.RandomGenerator.Next(end - newSpanStart) + newSpanStart;
-            if (newSpanEnd > newSpanStart)
-            {
-                currentNewComponentNumber++;
-                newSpanEndPoints.Add(newSpanStart);
-                CarvePassage(newSpanStart + currentRow * Width, newSpanStart + Width + currentRow * Width);
-                newSpanEndPoints.Add(newSpanEnd);
-                CarvePassage(newSpanEnd + currentRow * Width, newSpanEnd + Width + currentRow * Width);
-                for (int i = newSpanStart; i < newSpanEnd; i++)
-                {
-                    newRowValues[i] = currentNewComponentNumber;
-                    CarvePassage(i + currentRow * Width, i + 1 + currentRow * Width);
-                }
-                newRowValues[newSpanEnd] = currentNewComponentNumber;
-
-                return newSpanEnd;
-            }
-            return start - 1;
+            int exitColumn = EndCell % Width;
+            CarveVerticalSpan(lastLeftColumn, Height - 1 - 1, Height - 1, preserveExistingCells);
+            CarveVerticalSpan(lastRightColumn, Height - 1 - 1, Height - 1, preserveExistingCells);
+            CarveHorizontalSpan(Height - 1, lastLeftColumn, lastRightColumn, preserveExistingCells);
         }
     }
 }

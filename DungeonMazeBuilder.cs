@@ -108,7 +108,7 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// Copy Constructor for MazeBuilderAbstract classes.
         /// </summary>
-        /// <param name="mazeBuilder"></param>
+        /// <param name="mazeBuilder">Previous MazeBuilderAbstract on which to build upon.</param>
         public DungeonMazeBuilder(MazeBuilderAbstract<N,E> mazeBuilder)
             : base(mazeBuilder)
         {
@@ -127,7 +127,7 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// Create a room explicitly at the specified location with the specified size.
         /// </summary>
-        /// <param name="minX">Lowerleft x coordinate.</param>
+        /// <param name="minX">Lower-left x coordinate.</param>
         /// <param name="minY">Lower-left y coordinate.</param>
         /// <param name="roomWidth">Width of the room.</param>
         /// <param name="roomHeight">Height of the room.</param>
@@ -292,7 +292,7 @@ namespace CrawfisSoftware.PCG
         }
 
         /// <summary>
-        /// Using existing path distances, find the furthestpaths and carve them.
+        /// Using existing path distances, find the furthest paths and carve them.
         /// </summary>
         /// <param name="numberOfPathsToCarve">THe number of passageways to create.</param>
         public void CarveExtraPassagesFurthestAway(int numberOfPathsToCarve = 1)
@@ -376,7 +376,7 @@ namespace CrawfisSoftware.PCG
         }
 
         /// <summary>
-        /// Create randome rooms that do not overlap.
+        /// Create random rooms that do not overlap.
         /// </summary>
         /// <param name="numberOfRoomsToAdd"></param>
         public void AddRandomRooms(int numberOfRoomsToAdd)
@@ -390,9 +390,9 @@ namespace CrawfisSoftware.PCG
                 int roomWidth = MinRoomSize + RandomGenerator.Next(deltaWidth);
                 int roomHeight = MinRoomSize + RandomGenerator.Next(deltaWidth);
                 int minimumXCoord = Width - roomWidth;
-                int minumumYCoord = Height - roomHeight;
+                int minimumYCoord = Height - roomHeight;
                 int minX = RandomGenerator.Next(minimumXCoord);
-                int minY = RandomGenerator.Next(minumumYCoord);
+                int minY = RandomGenerator.Next(minimumYCoord);
                 Room room = new Room(minX, minY, roomWidth, roomHeight);
                 roomTrys++;
                 bool canPlace = CheckForOverlap(room);
