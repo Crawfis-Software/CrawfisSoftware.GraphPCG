@@ -7,6 +7,8 @@ using static CrawfisSoftware.PCG.EnumerationUtilities;
 
 namespace CrawfisSoftware.PCG
 {
+    // TODO: This class is not fully functioning. It can sample a loop. But the loop is not general enough.
+    // TODO: It only has two outflows on the bottom and top edge. It still cannot do any arbitrary even number.
     public class LoopSamplerBottomToTop
     {
         
@@ -173,6 +175,10 @@ namespace CrawfisSoftware.PCG
             return (null, null);
         }
         
+        
+        // Currently, in order to determine the horizontals, we need a pair of inflows and outflows.
+        // This only works if we do not have anything to connect on the bottom and top edge. This is to
+        // determine how to connect the bottom and top edge given only inflows or outflows
         private int HorizontalOnEdges(int verticalBitPattern, int width)
         {
             int onesSoFar = 0;
@@ -195,6 +201,9 @@ namespace CrawfisSoftware.PCG
             return horizontal;
         }
 
+        
+        // This is used for component determination for the bottom row.
+        // TODO: Combine this with the previous method and come up with a better name
         private int[] DetermineComponent(int horizontalBitPattern, int width)
         {
             int[] component = new int[width];

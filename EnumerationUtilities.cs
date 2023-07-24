@@ -296,8 +296,8 @@ namespace CrawfisSoftware.PCG
             int bitPattern;
             do
             {
-                bitPattern = random.Next(max) | setBit;
-            } while ((bitPattern != 0) && CountSetBits(bitPattern) % 2 != 0);
+                bitPattern = (random.Next(max) | setBit) + 1;
+            } while (CountSetBits(bitPattern) % 2 != 0);
 
             return bitPattern;
         }
