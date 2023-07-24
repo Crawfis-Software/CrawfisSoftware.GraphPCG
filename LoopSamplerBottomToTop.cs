@@ -7,6 +7,8 @@ using static CrawfisSoftware.PCG.EnumerationUtilities;
 
 namespace CrawfisSoftware.PCG
 {
+    // TODO: This class is not fully functioning. It can sample a loop. But the loop is not general enough.
+    // TODO: It only has two outflows on the bottom and top edge. It still cannot do any arbitrary even number.
     public class LoopSamplerBottomToTop
     {
         
@@ -65,14 +67,19 @@ namespace CrawfisSoftware.PCG
             for (int i = 0; i < _height; i++)
                 components[i] = new int[_width];
 
-            for (int i = 0; i < _width; i++)
-                components[0][i] = 1;
+            
                     
             
-            verticalPaths[0] = (int)Math.Pow(2, _width -1) + 1; // row;
-            horizontalPaths[0] = (int)Math.Pow(2, _width) - 1;
+            // verticalPaths[0] = (int)Math.Pow(2, _width -1) + 1; // row;
+            // horizontalPaths[0] = (int)Math.Pow(2, _width) - 1;
+
+            verticalPaths[0] = EnumerationUtilities.RandomBitPattern(_width, _random, 2);
+            horizontalPaths[0] = HorizontalOnEdges(verticalPaths[0], _width);
+
+            components[0] = DetermineComponent(horizontalPaths[0], _width);
             
             verticalPaths[_height - 1] = (int)Math.Pow(2, _width -1) + 1; // row;
+            //verticalPaths[_height - 1] = EnumerationUtilities.RandomBitPattern(_width, _random, 2);
 
             //int endRow = verticalPaths[0];
             //verticalPaths[_height - 1] = endRow;
@@ -101,7 +108,7 @@ namespace CrawfisSoftware.PCG
             EnumerationUtilities.Validator horizontalCandidateOracle = null)
         {
             int horizontalSpans;
-            
+
             if (index == (height - 2))
             {
                 int lastRowAttempts = 0;
@@ -115,6 +122,9 @@ namespace CrawfisSoftware.PCG
                         {
                             horizontalGrid[height - 1] = horizontalSpans;
                             horizontalGrid[height] = (int)Math.Pow(2, _width) - 1;
+                            
+                            //horizontalGrid[height] = HorizontalOnEdges(verticalGrid[height], _width);;
+                            Console.WriteLine($"Number of components: {components.Distinct().Count()}");
                             return (verticalGrid, horizontalGrid);
                         }
                     }
@@ -164,5 +174,57 @@ namespace CrawfisSoftware.PCG
             
             return (null, null);
         }
+        
+        
+        // Currently, in order to determine the horizontals, we need a pair of inflows and outflows.
+        // This only works if we do not have anything to connect on the bottom and top edge. This is to
+        // determine how to connect the bottom and top edge given only inflows or outflows
+        private int HorizontalOnEdges(int verticalBitPattern, int width)
+        {
+            int onesSoFar = 0;
+            int horizontal = 0;
+            for (int i = 0; i < width; i++)
+            {
+                int shifted = verticalBitPattern >> i;
+                if ((shifted & 1) == 1)
+                {
+                    onesSoFar += 1;
+                }
+
+                if (onesSoFar % 2 != 0)
+                {
+                    horizontal = horizontal | (1 << i);
+                }
+                
+            }
+
+            return horizontal;
+        }
+
+        
+        // This is used for component determination for the bottom row.
+        // TODO: Combine this with the previous method and come up with a better name
+        private int[] DetermineComponent(int horizontalBitPattern, int width)
+        {
+            int[] component = new int[width];
+            int num = 1;
+            int previous = 2;
+            for (int i = 0; i < width; i++)
+            {
+                int shifted = horizontalBitPattern >> i;
+                if ((shifted & 1) == 1)
+                {
+                    component[width - 1 - i] = num;
+                    previous = 1;
+                } else if ( ((shifted & 1) == 0) && previous == 1 )
+                {
+                    num++;
+                    previous = 0;
+                }
+            }
+
+            return component;
+        }
     }
+
 }

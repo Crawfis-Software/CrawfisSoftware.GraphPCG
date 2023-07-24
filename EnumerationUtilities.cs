@@ -251,7 +251,7 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// Count the number of set bits in the bit pattern
         /// </summary>
-        /// <param name="n"> Base 10 representation of bits</param>
+        /// <param name="n">Base 10 representation of bits</param>
         /// <returns></returns>
         public static int CountSetBits(int n)
         {
@@ -267,9 +267,9 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// Generate a random bit pattern with an odd number of set bits under given width
         /// </summary>
-        /// <param name="width"> Maximum number of digits permitted in a bit pattern</param>
-        /// <param name="random"> Random number generator </param>
-        /// <param name="setBit"> Pre-set bit in the bit pattern</param>
+        /// <param name="width">Maximum number of digits permitted in a bit pattern</param>
+        /// <param name="random">Random number generator </param>
+        /// <param name="setBit">Pre-set bit in the bit pattern</param>
         /// <returns></returns>
         public static int RandomOddBitPattern(int width, Random random, int setBit = 0)
         {
@@ -286,9 +286,9 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// Generate a random bit pattern with an even number of set bits under given width
         /// </summary>
-        /// <param name="width"> Maximum number of digits permitted in a bit pattern</param>
-        /// <param name="random"> Random number generator </param>
-        /// <param name="setBit"> Pre-set bit in the bit pattern</param>
+        /// <param name="width">Maximum number of digits permitted in a bit pattern</param>
+        /// <param name="random">Random number generator </param>
+        /// <param name="setBit">Pre-set bit in the bit pattern</param>
         /// <returns></returns>
         public static int RandomEvenBitPattern(int width, Random random, int setBit = 0)
         {
@@ -296,8 +296,28 @@ namespace CrawfisSoftware.PCG
             int bitPattern;
             do
             {
-                bitPattern = random.Next(max) | setBit;
+                bitPattern = (random.Next(max) | setBit) + 1;
             } while (CountSetBits(bitPattern) % 2 != 0);
+
+            return bitPattern;
+        }
+        
+        /// <summary>
+        /// Generate a random bit pattern with an given number of set bits under given width
+        /// </summary>
+        /// <param name="width">Maximum number of digits permitted in a bit pattern</param>
+        /// <param name="random">Random number generator </param>
+        /// <param name="numOfSetBit">Random number generator </param>
+        /// <param name="setBit">Pre-set bit in the bit pattern</param>
+        /// <returns></returns>
+        public static int RandomBitPattern(int width, Random random, int numOfSetBit, int setBit = 0)
+        {
+            int max = (int) Math.Pow(2, width);
+            int bitPattern;
+            do
+            {
+                bitPattern = random.Next(max) | setBit;
+            } while (CountSetBits(bitPattern) != numOfSetBit);
 
             return bitPattern;
         }
@@ -306,7 +326,7 @@ namespace CrawfisSoftware.PCG
         /// Counts the number of distinct numbers in the List.
         /// </summary>
         /// <param name="list">An IEnumerable of int's</param>
-        /// <returns>The number of distint values within the list.</returns>
+        /// <returns>The number of distinct values within the list.</returns>
         public static int NumberOfDistinctValues(IEnumerable<int> list)
         {
             return list.Distinct().Count();
