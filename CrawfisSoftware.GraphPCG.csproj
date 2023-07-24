@@ -6,7 +6,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DocumentationFile>$(SolutionDir)Documentation\GraphPCG.xml</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)Documentation\CrawfisSoftware.GraphPCG.xml</DocumentationFile>
     <OutputPath>$(SolutionDir)bin\Debug\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
