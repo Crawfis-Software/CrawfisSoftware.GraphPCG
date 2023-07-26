@@ -15,18 +15,18 @@ namespace CrawfisSoftware.PCG
         /// Get or set the maximum horizontal passage length used in the default
         /// PickNextColumn function.
         /// </summary>
-        public int MaxSpanWidth { get; set; } = 25;
+        public int MaxSpanWidth { get; set; } = 5;
 
         /// <summary>
         /// Get or set the number of rows that should be vertical spans before any turns. This is used in the default
         /// PickNextColumn function.
         /// </summary>
-        public int MinVerticalSpan { get; private set; } = 2;
+        public int MinVerticalSpan { get; private set; } = 1;
         /// <summary>
         /// Get or set the number of rows that should be vertical spans before any turns. This is used in the default
         /// PickNextColumn function.
         /// </summary>
-        public int MinLeftToRightSpacing { get; private set; } = 3;
+        public int MinLeftToRightSpacing { get; private set; } = 1;
 
         /// <summary>
         /// Get or set the a function to determine on a per row basis the exact column
@@ -67,6 +67,7 @@ namespace CrawfisSoftware.PCG
         public LoopGeneratorSideWinder(int width, int height, GetGridLabel<N> nodeAccessor = null, GetEdgeLabel<E> edgeAccessor = null) : base(width, height, nodeAccessor, edgeAccessor)
         {
             this.PickNextColumns = DefaultPickNextColumnsFunc;
+            MaxSpanWidth = Width;
         }
 
         /// <summary>
@@ -76,6 +77,7 @@ namespace CrawfisSoftware.PCG
         public LoopGeneratorSideWinder(MazeBuilderAbstract<N, E> mazeBuilder) : base(mazeBuilder)
         {
             this.PickNextColumns = DefaultPickNextColumnsFunc;
+            MaxSpanWidth = Width;
         }
 
         /// <inheritdoc/>
