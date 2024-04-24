@@ -111,7 +111,7 @@ namespace CrawfisSoftware.Utility
             }
         }
 
-        private static IEnumerable<T> EnumerableFrom<T>(T item)
+        private static IEnumerable<T> EnumerableFrom<T>(this T item)
         {
             yield return item;
         }
