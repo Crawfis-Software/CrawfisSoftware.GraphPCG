@@ -1,7 +1,7 @@
-﻿using CrawfisSoftware.Collections.Graph;
+﻿using System;
+
+using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Collections.Maze;
-using System;
-using System.Collections.Generic;
 
 namespace CrawfisSoftware.PCG
 {
@@ -38,14 +38,14 @@ namespace CrawfisSoftware.PCG
         private int _lastRow = -99;
         private (int, int) DefaultPickNextColumnsFunc(int row, int previousLeftColumn, int previousRightColumn, System.Random randomGenerator = null)
         {
-            if(row < _lastRow + MinVerticalSpan) return (previousLeftColumn, previousRightColumn);
+            if (row < _lastRow + MinVerticalSpan) return (previousLeftColumn, previousRightColumn);
             _lastRow = row;
             //return (0, Width - 1);
-            int delta = RandomGenerator.Next(MaxSpanWidth+1);
+            int delta = RandomGenerator.Next(MaxSpanWidth + 1);
             int sign = RandomGenerator.Next(2) == 1 ? 1 : -1;
             int newLeftColumn = previousLeftColumn + sign * delta;
             if (newLeftColumn > Width - 1 - MinLeftToRightSpacing) newLeftColumn = Width - 1 - MinLeftToRightSpacing - RandomGenerator.Next(5);
-            if (newLeftColumn > previousRightColumn- MinLeftToRightSpacing) newLeftColumn = previousRightColumn - MinLeftToRightSpacing;
+            if (newLeftColumn > previousRightColumn - MinLeftToRightSpacing) newLeftColumn = previousRightColumn - MinLeftToRightSpacing;
             if (newLeftColumn < 0) newLeftColumn = previousLeftColumn - sign * delta;
             if (newLeftColumn > previousRightColumn - MinLeftToRightSpacing) newLeftColumn = previousRightColumn - MinLeftToRightSpacing;
             delta = RandomGenerator.Next(MaxSpanWidth + 1);
@@ -83,13 +83,15 @@ namespace CrawfisSoftware.PCG
         /// <inheritdoc/>
         public override void CreateMaze(bool preserveExistingCells = true)
         {
-            (int lastLeftColumn, int lastRightColumn) = PickNextColumns(0, 0, Width-1, RandomGenerator);
+            (int lastLeftColumn, int lastRightColumn) = PickNextColumns(0, 0, Width - 1, RandomGenerator);
             lastLeftColumn = (lastLeftColumn < 0) ? 0 : lastLeftColumn;
             lastLeftColumn = (lastLeftColumn >= lastRightColumn) ? lastRightColumn - 1 : lastLeftColumn;
             lastRightColumn = (lastRightColumn < lastLeftColumn) ? lastLeftColumn + 1 : lastRightColumn;
             lastRightColumn = (lastRightColumn >= Width) ? Width - 1 : lastRightColumn;
             CarveHorizontalSpan(0, lastLeftColumn, lastRightColumn, preserveExistingCells);
-            for (int row = 1; row < Height-1; row++)
+            StartCell = lastLeftColumn;
+            EndCell = lastLeftColumn + 1;
+            for (int row = 1; row < Height - 1; row++)
             {
                 CarveVerticalSpan(lastLeftColumn, row - 1, row, preserveExistingCells);
                 CarveVerticalSpan(lastRightColumn, row - 1, row, preserveExistingCells);
