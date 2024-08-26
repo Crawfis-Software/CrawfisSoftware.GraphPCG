@@ -19,8 +19,8 @@ namespace CrawfisSoftware.PCG.MazeBuilder
         }
 
         public override void CreateMaze(bool preserveExistingCells = false)
-        {
-            var mazeBuilder = new MazeBuilderExplicit<int, int>(Width, Height, MazeBuilderUtility<int, int>.DummyNodeValues, MazeBuilderUtility<int, int>.DummyEdgeValues);
+        { 
+            this.Clear();
             var samplerGrid = _pathSampler.Sample(StartCell, EndCell);
             MazeWrapperFromGridBitArrays<N,E>.CarvePath(this, samplerGrid.vertical, samplerGrid.horizontal);
         }
