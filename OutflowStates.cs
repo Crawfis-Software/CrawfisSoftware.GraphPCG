@@ -1,4 +1,5 @@
-﻿using CrawfisSoftware.Utility;
+﻿using CrawfisSoftware.Collections;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace CrawfisSoftware.PCG
     internal class OutflowStates
     {
         /// <summary>
-        /// This method will eliminate invald states between two inflows based on positions and
+        /// This method will eliminate invalid states between two inflows based on positions and
         /// components. All possible combinations can then be tried for each span
         /// So there would be 3^N possible state cases. 
         /// </summary>
@@ -146,7 +147,7 @@ namespace CrawfisSoftware.PCG
             {
                 for (int j = 0; j < rowState.Count; j++)
                     newStates[j] = rowState[j];
-                if (components[i] == components[i+1])
+                if (components[i] == components[i + 1])
                     continue;
                 // Merge i and i+1 and recurse
                 newStates[i] = OutflowState.DeadGoesLeft;
