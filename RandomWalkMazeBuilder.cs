@@ -1,5 +1,6 @@
 ﻿using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Collections.Maze;
+
 using System.Collections.Generic;
 
 namespace CrawfisSoftware.PCG
@@ -7,11 +8,11 @@ namespace CrawfisSoftware.PCG
     /// <summary>
     /// Graph builder using the Drunken Walk or Random Walk algorithm with multiple walkers.
     /// </summary>
-    /// <typeparam name="N"></typeparam>
-    /// <typeparam name="E"></typeparam>
+    /// <typeparam name="N">The type used for node labels</typeparam>
+    /// <typeparam name="E">The type used for edge weights</typeparam>
     public class RandomWalkMazeBuilder<N, E> : MazeBuilderAbstract<N, E>
     {
-        // Having Walker in a seperate class allows for multiple walkers. Need to make this thread safe though.
+        // Having Walker in a separate class allows for multiple walkers. Need to make this thread safe though.
         private class Walker
         {
             private RandomWalkMazeBuilder<N, E> mazeBuilder;
@@ -127,8 +128,8 @@ namespace CrawfisSoftware.PCG
         {
             numberOfCarvedPassages = 0;
             numberOfSteps = 0;
-            //numberOfNewPassages = (int)(PercentToCarve * grid.NumberOfEdges);
-            numberOfNewPassages = (int)(PercentToCarve * 4*(Width-1)*(Height-1) + 2*Width + 2*Height);
+            numberOfNewPassages = (int)(PercentToCarve * grid.NumberOfNodes);
+            //numberOfNewPassages = (int)(PercentToCarve * 2 * (Width - 1) * (Height - 1) + 2 * Width + 2 * Height);
             this.preserveExistingCells = preserveExistingCells;
             InitializeWalkers();
         }
@@ -159,7 +160,7 @@ namespace CrawfisSoftware.PCG
                 foreach (var walker in walkers)
                 {
                     walker.Update();
-                    if (numberOfCarvedPassages < numberOfNewPassages || numberOfSteps < MaxWalkingDistance)
+                    if (numberOfCarvedPassages < numberOfNewPassages && numberOfSteps < MaxWalkingDistance)
                         continue;
                     return;
                 }

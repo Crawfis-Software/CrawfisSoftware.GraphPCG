@@ -14,22 +14,22 @@ namespace CrawfisSoftware.PCG
         /// <param name="solidBlocks">2D array matching the maze builder's width and height.
         /// A value of true implies this cell is a solid block. Passages will be carved from non-solid
         /// blocks to adjacent non-solid blocks.</param>
-        public static void CarveOpenings(MazeBuilderAbstract<int,int> mazeBuilder, bool[,] solidBlocks)
+        public static void CarveOpenings(MazeBuilderAbstract<int, int> mazeBuilder, bool[,] solidBlocks)
         {
-            
-            for(int row = 0; row < mazeBuilder.Height-1; row++)
+
+            for (int row = 0; row < mazeBuilder.Height - 1; row++)
             {
-                for(int column = 0; column < mazeBuilder.Width-1; column++)
+                for (int column = 0; column < mazeBuilder.Width - 1; column++)
                 {
-                    if(!solidBlocks[row,column])
+                    if (!solidBlocks[column, row])
                     {
-                        if (!solidBlocks[row + 1, column])
+                        if (!solidBlocks[column, row + 1])
                         {
                             mazeBuilder.CarvePassage(column, row, column, row + 1);
                         }
-                        if (!solidBlocks[row, column+1])
+                        if (!solidBlocks[column + 1, row])
                         {
-                            mazeBuilder.CarvePassage(column, row, column+1, row);
+                            mazeBuilder.CarvePassage(column, row, column + 1, row);
                         }
                     }
                 }

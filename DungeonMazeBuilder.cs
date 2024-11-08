@@ -1,5 +1,6 @@
 ﻿using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Collections.Maze;
+
 using System;
 using System.Collections.Generic;
 
@@ -29,7 +30,8 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// Defined algorithms for connecting two rooms.
         /// </summary>
-        public enum PassageRasterizerType { 
+        public enum PassageRasterizerType
+        {
             /// <summary>
             /// No algorithm selected.
             /// </summary>
@@ -49,7 +51,8 @@ namespace CrawfisSoftware.PCG
             /// <summary>
             /// Use a random walk
             /// </summary>
-            RandomWalk };
+            RandomWalk
+        };
 
         private int NumberOfRasterizers = 5;
 
@@ -87,7 +90,7 @@ namespace CrawfisSoftware.PCG
         /// Get or set the maximum number of attempts to place all rooms
         /// </summary>
         public int MaxNumberOfTrys { get; set; } = 1000000;
-        
+
         /// <summary>
         /// Get or set a cost associated with carving a wall
         /// </summary>
@@ -109,7 +112,7 @@ namespace CrawfisSoftware.PCG
         /// Copy Constructor for MazeBuilderAbstract classes.
         /// </summary>
         /// <param name="mazeBuilder">Previous MazeBuilderAbstract on which to build upon.</param>
-        public DungeonMazeBuilder(MazeBuilderAbstract<N,E> mazeBuilder)
+        public DungeonMazeBuilder(MazeBuilderAbstract<N, E> mazeBuilder)
             : base(mazeBuilder)
         {
         }
@@ -158,7 +161,7 @@ namespace CrawfisSoftware.PCG
         {
             for (int i = 1; i < roomList.Count; i++)
             {
-                AddConnection(i-1, i, passageType);
+                AddConnection(i - 1, i, passageType);
             }
         }
 
@@ -172,7 +175,7 @@ namespace CrawfisSoftware.PCG
             // Would need to build a graph for the below. Which would require path costs.
             //var shortestPaths = new AllPairsShortestPath<N, E>(grid, edgeCost);
             int numberCreated = 0;
-            var allPathLengths = new List<Tuple<int, int, float>>(roomList.Count*roomList.Count/2);
+            var allPathLengths = new List<Tuple<int, int, float>>(roomList.Count * roomList.Count / 2);
             for (int roomIndex = 0; roomIndex < roomList.Count; roomIndex++)
             {
                 int sourceCenterX = roomList[roomIndex].minX + roomList[roomIndex].width / 2;
@@ -231,15 +234,15 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         public void CarveAllPassages()
         {
-            foreach(var edge in roomConnections)
+            foreach (var edge in roomConnections)
             {
                 PassageRasterizerType rasterizer = edge.Item3;
-                if(edge.Item3 == PassageRasterizerType.Unspecified)
+                if (edge.Item3 == PassageRasterizerType.Unspecified)
                 {
                     int randomRasterizer = RandomGenerator.Next(NumberOfRasterizers) + 1;
                     rasterizer = (PassageRasterizerType)randomRasterizer;
                 }
-                switch(rasterizer)
+                switch (rasterizer)
                 {
                     case PassageRasterizerType.Elbow:
                         CarveElbowPassage(edge.Item1, edge.Item2);
@@ -250,6 +253,71 @@ namespace CrawfisSoftware.PCG
                     case PassageRasterizerType.ShortestPathUsingExisting:
                         CarveCurrentShortestPath(edge.Item1, edge.Item2);
                         break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Using existing path distances, find the furthest paths and carve them.
+        /// </summary>
+        /// <param name="numberOfPathsToCarve">THe number of passageways to create.</param>
+
+        /// <summary>
+        /// Actually create the rooms in the underlying grid maze.
+        /// </summary>
+        public void CarveAllRooms()
+        {
+            //AddRandomRooms(this.NumberOfRooms-roomList.Count);
+            foreach (Room room in roomList)
+            {
+                int lowerLeftIndex = room.minX + Width * room.minY;
+                int upperRightIndex = lowerLeftIndex + (room.height - 1) * Width + (room.width - 1);
+                CarveRoom(lowerLeftIndex, upperRightIndex);
+            }
+        }
+        public void CarveExtraPassagesFurthestAway(int numberOfPathsToCarve = 1)
+        {
+            int pathsToCarve = numberOfPathsToCarve;
+            pathsToCarve = (pathsToCarve >= pathLengthsFromSource.Count) ? pathLengthsFromSource.Count - 1 : pathsToCarve;
+            for (int i = 1; i <= pathsToCarve; i += 2)
+            {
+                pathLengthsFromSource.Sort(TupleComparer);
+                int room1 = pathLengthsFromSource[pathLengthsFromSource.Count - i].Item1;
+                int centerX = roomList[room1].minX + roomList[room1].width / 2;
+                int centerY = roomList[room1].minY + roomList[room1].height / 2;
+                int room2 = pathLengthsFromSource[pathLengthsFromSource.Count - i - 1].Item1;
+                int center2X = roomList[room2].minX + roomList[room2].width / 2;
+                int center2Y = roomList[room2].minY + roomList[room2].height / 2;
+                CarveHorizontalSpan(centerY, centerX, center2X, false);
+                CarveVerticalSpan(center2X, centerY, center2Y, false);
+            }
+        }
+
+        /// <summary>
+        /// Create random rooms that do not overlap.
+        /// </summary>
+        /// <param name="numberOfRoomsToAdd"></param>
+        public void AddRandomRooms(int numberOfRoomsToAdd)
+        {
+            int deltaWidth = MaxRoomSize - MinRoomSize + 1;
+            // Random create rooms
+            int roomTrys = 0;
+            int roomsAdded = 0;
+            while (roomsAdded < numberOfRoomsToAdd && roomTrys < MaxNumberOfTrys)
+            {
+                int roomWidth = MinRoomSize + RandomGenerator.Next(deltaWidth);
+                int roomHeight = MinRoomSize + RandomGenerator.Next(deltaWidth);
+                int minimumXCoord = Width - roomWidth;
+                int minimumYCoord = Height - roomHeight;
+                int minX = RandomGenerator.Next(minimumXCoord);
+                int minY = RandomGenerator.Next(minimumYCoord);
+                Room room = new Room(minX, minY, roomWidth, roomHeight);
+                roomTrys++;
+                bool canPlace = CheckForOverlap(room);
+                if (canPlace)
+                {
+                    roomList.Add(room);
+                    roomsAdded++;
                 }
             }
         }
@@ -291,28 +359,6 @@ namespace CrawfisSoftware.PCG
             CarveVerticalSpan(room2CenterX, room1CenterY, room2CenterY, false);
         }
 
-        /// <summary>
-        /// Using existing path distances, find the furthest paths and carve them.
-        /// </summary>
-        /// <param name="numberOfPathsToCarve">THe number of passageways to create.</param>
-        public void CarveExtraPassagesFurthestAway(int numberOfPathsToCarve = 1)
-        {
-            int pathsToCarve = numberOfPathsToCarve;
-            pathsToCarve = (pathsToCarve >= pathLengthsFromSource.Count) ? pathLengthsFromSource.Count - 1 : pathsToCarve;
-            for(int i=1; i <= pathsToCarve; i+=2)
-            {
-                pathLengthsFromSource.Sort(TupleComparer);
-                int room1 = pathLengthsFromSource[pathLengthsFromSource.Count - i].Item1;
-                int centerX = roomList[room1].minX + roomList[room1].width / 2;
-                int centerY = roomList[room1].minY + roomList[room1].height / 2;
-                int room2 = pathLengthsFromSource[pathLengthsFromSource.Count - i-1].Item1;
-                int center2X = roomList[room2].minX + roomList[room2].width / 2;
-                int center2Y = roomList[room2].minY + roomList[room2].height / 2;
-                CarveHorizontalSpan(centerY, centerX, center2X, false);
-                CarveVerticalSpan(center2X, centerY, center2Y, false);
-            }
-        }
-
         private float edgeCost(IIndexedEdge<E> edge)
         {
             const float largeCost = 10000000f;
@@ -328,20 +374,6 @@ namespace CrawfisSoftware.PCG
                 return largeCost;
             else
                 return wallCarveCost * (float)RandomGenerator.NextDouble();
-        }
-
-        /// <summary>
-        /// Actually create the rooms in the underlying grid maze.
-        /// </summary>
-        public void CarveAllRooms()
-        {
-            //AddRandomRooms(this.NumberOfRooms-roomList.Count);
-            foreach (Room room in roomList)
-            {
-                int lowerLeftIndex = room.minX + Width * room.minY;
-                int upperRightIndex = lowerLeftIndex + (room.height - 1) * Width + (room.width - 1);
-                CarveRoom(lowerLeftIndex, upperRightIndex);
-            }
         }
 
         private void CarveRoom(int lowerLeftIndex, int upperRightIndex)
@@ -371,35 +403,6 @@ namespace CrawfisSoftware.PCG
                 for (int j = bottom + 1; j < top; j++)
                 {
                     directions[i, j] |= Direction.W | Direction.N | Direction.E | Direction.S;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Create random rooms that do not overlap.
-        /// </summary>
-        /// <param name="numberOfRoomsToAdd"></param>
-        public void AddRandomRooms(int numberOfRoomsToAdd)
-        {
-            int deltaWidth = MaxRoomSize - MinRoomSize + 1;
-            // Random create rooms
-            int roomTrys = 0;
-            int roomsAdded = 0;
-            while (roomsAdded < numberOfRoomsToAdd && roomTrys < MaxNumberOfTrys)
-            {
-                int roomWidth = MinRoomSize + RandomGenerator.Next(deltaWidth);
-                int roomHeight = MinRoomSize + RandomGenerator.Next(deltaWidth);
-                int minimumXCoord = Width - roomWidth;
-                int minimumYCoord = Height - roomHeight;
-                int minX = RandomGenerator.Next(minimumXCoord);
-                int minY = RandomGenerator.Next(minimumYCoord);
-                Room room = new Room(minX, minY, roomWidth, roomHeight);
-                roomTrys++;
-                bool canPlace = CheckForOverlap(room);
-                if (canPlace)
-                {
-                    roomList.Add(room);
-                    roomsAdded++;
                 }
             }
         }
