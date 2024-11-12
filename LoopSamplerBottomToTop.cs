@@ -12,7 +12,7 @@ namespace CrawfisSoftware.PCG
     public class LoopSamplerBottomToTop
     {
         
-        private const int MaxDefaultAttempts = 10000;
+        private const int MaxDefaultAttempts = 100000;
         private readonly int _width;
         private readonly int _height;
         private readonly Random _random;
@@ -124,7 +124,7 @@ namespace CrawfisSoftware.PCG
                             horizontalGrid[height] = (int)Math.Pow(2, _width) - 1;
                             
                             //horizontalGrid[height] = HorizontalOnEdges(verticalGrid[height], _width);;
-                            Console.WriteLine($"Number of components: {components.Distinct().Count()}");
+                            //Console.WriteLine($"Number of components: {components.Distinct().Count()}");
                             return (verticalGrid, horizontalGrid);
                         }
                     }

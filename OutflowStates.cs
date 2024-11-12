@@ -10,9 +10,9 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     [Flags]
     // Bug: Or bad design. Why is this a Flag? They are mutually exclusive.
-    internal enum OutflowState { Left = 1, Right = 2, Up = 4, DeadGoesLeft = 8, DeadGoesRight = 16 };
+    public enum OutflowState { Left = 1, Right = 2, Up = 4, DeadGoesLeft = 8, DeadGoesRight = 16 };
 
-    internal class OutflowStates
+    public class OutflowStates
     {
         /// <summary>
         /// This method will eliminate invald states between two inflows based on positions and

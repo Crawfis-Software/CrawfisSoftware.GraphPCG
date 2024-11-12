@@ -108,6 +108,10 @@ namespace CrawfisSoftware.PCG
                         if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, height - 1,
                                 horizontalSpans, verticalGrid, horizontalGrid, components))
                         {
+                            foreach (var row in components)
+                            {
+                                Console.WriteLine(string.Join(",",row));
+                            }
                             horizontalGrid[height - 1] = horizontalSpans;
                             
                             var verticalPaths = new int[_height -1];

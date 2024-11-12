@@ -258,7 +258,7 @@ namespace CrawfisSoftware.PCG
         /// <param name="leftEdgeState">The Outflow state of the first outflow.</param>
         /// <param name="rightEdgeState">The outflow state for the last outflow.</param>
         /// <returns>An enumerable of integers that represent the state of the row.</returns>
-        private static IEnumerable<int> ValidRows(int width, int inFlows,
+        public static IEnumerable<int> ValidRows(int width, int inFlows,
             OutflowState leftEdgeState = OutflowState.DeadGoesRight, OutflowState rightEdgeState = OutflowState.DeadGoesLeft)
         {
             // Find all possible merges.

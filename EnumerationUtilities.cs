@@ -10,7 +10,7 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     public static class EnumerationUtilities
     {
-        
+        private static int newComponentNum = 1;
         /// <summary>
         /// Defines a function that takes in the state of the Path enumeration including a 
         /// possible new row or vertical bits and returns true if the user wants to allow it, false otherwise.
@@ -53,6 +53,7 @@ namespace CrawfisSoftware.PCG
             //    3) if the number of outflow bits from max(a,d)+1 to b is even, then these are all new components (in pairs). Note outflow at b must be zero.
             //    4) if no match still and e < c, then match b to e.
             //
+            //newComponentNum ++;
             bool isValid = true;
             IList<int> components = componentsGrid[index];
             int width = components.Count;
@@ -66,7 +67,7 @@ namespace CrawfisSoftware.PCG
             int inFlowBitPattern = inFlows;
             int outFlowBitPattern = outFlows;
             horizontalSpans = 0;
-            int addedComponentNum = width; // Some number larger than all other component numbers (for now)
+            // Some number larger than all other component numbers (for now)
             // Find first outflow bit (b)
             while (b < width)
             {
@@ -114,12 +115,12 @@ namespace CrawfisSoftware.PCG
                         //else
                         {
                             numOfOutflowsInSpan -= 1;
-                            newOutflowComponents[i + spanStart] = addedComponentNum;
+                            newOutflowComponents[i + spanStart] = newComponentNum;
                         }
                         if (!rightEdge)
                         {
                             // new loop 
-                            addedComponentNum++;
+                            newComponentNum++;
                             e = i + spanStart;
                             int bitPattern = ((1 << (e - d)) - 1) << d;
                             if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
@@ -162,7 +163,8 @@ namespace CrawfisSoftware.PCG
                     if (!matched && (c < width))
                     {
                         int componentC = components[c];
-                        if (componentC == 0) throw new InvalidOperationException("ComponentC is zero!");
+                        //if (componentC == 0) throw new InvalidOperationException("ComponentC is zero!");
+                        if (componentC == 0) isValid = false;
                         if (componentRemap.TryGetValue(componentC, out tempComponentNum)) componentC = tempComponentNum;
                         if (componentB == componentC) 
                             isValid = false;
@@ -196,41 +198,41 @@ namespace CrawfisSoftware.PCG
             }
 
             // Renumber components left to right
-            for (int i = 0; i < width; i++)
-            {
-                int componentNum = newOutflowComponents[i];
-                if (componentNum != 0)
-                {
-                    if (componentRemap.ContainsKey(componentNum))
-                    {
-                        newOutflowComponents[i] = componentRemap[componentNum];
-                    }
-                }
-            }
-            int lastMatched = 0;
-            componentRemap.Clear();
-            int newComponentNum = 1;
-            for (int i = 0; i < width; i++)
-            {
-                int componentNum = newOutflowComponents[i];
-                if (componentNum != 0)
-                {
-                    if (!componentRemap.ContainsKey(componentNum))
-                    {
-                        componentRemap[componentNum] = newComponentNum++;
-                    }
-                    else
-                    {
-                        if (componentRemap[componentNum] - lastMatched > maxNestedComponents)
-                        {
-                            isValid = false;
-                            break;
-                        }
-                        lastMatched = componentRemap[componentNum];
-                    }
-                    newOutflowComponents[i] = componentRemap[componentNum];
-                }
-            }
+            // for (int i = 0; i < width; i++)
+            // {
+            //     int componentNum = newOutflowComponents[i];
+            //     if (componentNum != 0)
+            //     {
+            //         if (componentRemap.ContainsKey(componentNum))
+            //         {
+            //             newOutflowComponents[i] = componentRemap[componentNum];
+            //         }
+            //     }
+            // }
+            // int lastMatched = 0;
+            // componentRemap.Clear();
+            // int newComponentNum = 1;
+            // for (int i = 0; i < width; i++)
+            // {
+            //     int componentNum = newOutflowComponents[i];
+            //     if (componentNum != 0)
+            //     {
+            //         if (!componentRemap.ContainsKey(componentNum))
+            //         {
+            //             componentRemap[componentNum] = newComponentNum++;
+            //         }
+            //         else
+            //         {
+            //             if (componentRemap[componentNum] - lastMatched > maxNestedComponents)
+            //             {
+            //                 isValid = false;
+            //                 break;
+            //             }
+            //             lastMatched = componentRemap[componentNum];
+            //         }
+            //         newOutflowComponents[i] = componentRemap[componentNum];
+            //     }
+            // }
             return isValid;
         }
         
@@ -297,7 +299,7 @@ namespace CrawfisSoftware.PCG
             do
             {
                 bitPattern = (random.Next(max) | setBit) + 1;
-            } while (CountSetBits(bitPattern) % 2 != 0);
+            } while (CountSetBits(bitPattern) % 2 != 0 || bitPattern == 0);
 
             return bitPattern;
         }
