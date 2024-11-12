@@ -79,7 +79,7 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// The number of walkers to spawn (eventually). New walkers can be spawned
         /// at random locations during initialization or at an existing walker's
-        /// location as the algorithm progesses. The later will carve out more open areas.
+        /// location as the algorithm progresses. The later will carve out more open areas.
         /// </summary>
         public int NumberOfWalkers { get; set; } = 4;
         /// <summary>
