@@ -366,7 +366,7 @@ namespace CrawfisSoftware.PCG
             int col1 = edge.From % Width;
             int row2 = edge.To / Width;
             int col2 = edge.To % Width;
-            Direction cellDirs = directions[col1, row1];
+            Direction cellDirs = GetDirection(col1, row1);
             Direction edgeDir = DirectionExtensions.GetEdgeDirection(edge.From, edge.To, Width);
             if ((cellDirs & edgeDir) == edgeDir)
                 return 1;
@@ -383,26 +383,26 @@ namespace CrawfisSoftware.PCG
             int bottom = lowerLeftIndex / Width;
             int top = upperRightIndex / Width;
             // Set corners
-            directions[left, bottom] |= Direction.N | Direction.E;
-            directions[left, top] |= Direction.S | Direction.E;
-            directions[right, bottom] |= Direction.N | Direction.W;
-            directions[right, top] |= Direction.S | Direction.W;
+            AddDirectionExplicitly(left, bottom, Direction.N | Direction.E);
+            AddDirectionExplicitly(left, top, Direction.S | Direction.E);
+            AddDirectionExplicitly(right, bottom, Direction.N | Direction.W);
+            AddDirectionExplicitly(right, top, Direction.S | Direction.W);
             //int i, j;
             for (int i = left + 1; i < right; i++)
             {
-                directions[i, bottom] |= Direction.W | Direction.N | Direction.E;
-                directions[i, top] |= Direction.W | Direction.E | Direction.S;
+                AddDirectionExplicitly(i, bottom, Direction.W | Direction.N | Direction.E);
+                AddDirectionExplicitly(i, top, Direction.W | Direction.E | Direction.S);
             }
             for (int j = bottom + 1; j < top; j++)
             {
-                directions[left, j] |= Direction.N | Direction.E | Direction.S;
-                directions[right, j] |= Direction.W | Direction.N | Direction.S;
+                AddDirectionExplicitly(left, j, Direction.N | Direction.E | Direction.S);
+                AddDirectionExplicitly(right, j, Direction.W | Direction.N | Direction.S);
             }
             for (int i = left + 1; i < right; i++)
             {
                 for (int j = bottom + 1; j < top; j++)
                 {
-                    directions[i, j] |= Direction.W | Direction.N | Direction.E | Direction.S;
+                    AddDirectionExplicitly(i, j, Direction.W | Direction.N | Direction.E | Direction.S);
                 }
             }
         }
