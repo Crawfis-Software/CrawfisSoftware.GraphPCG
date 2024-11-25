@@ -9,18 +9,11 @@ namespace CrawfisSoftware.PCG
     /// <summary>
     /// Class to sample a path from top to bottom.
     /// </summary>
-    public class LoopEnumerationWithTable
+    public class LoopEnumeration
     {
-        private const int MaxDefaultAttempts = 10000;
         private readonly int _width;
         private readonly int _height;
-        private readonly Random _random;
-        private readonly Validator _verticalCandidateOracle;
-        private readonly Validator _horizontalCandidateOracle;
-        private readonly IEnumerable<int> _evenTable;
-        private readonly Dictionary<int, IList<int>> _preComputedEvenTables;
-
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -32,26 +25,18 @@ namespace CrawfisSoftware.PCG
         /// the current candidate row value (vertical bits), all verticalBits so far, all horizontal bits so far, all components so far</param>
         /// <param name="horizontalCandidateOracle">Function that returns true or false whether this row is desired. Parameters are: the pathID, the row number,
         /// the current candidate value (horizontal bits), all verticalBits so far, all horizontal bits so far, all components so far.</param>
-        public LoopEnumerationWithTable(int width, int height, Random random, Validator verticalCandidateOracle = null,
-            Validator horizontalCandidateOracle = null)
+        public LoopEnumeration(int width, int height, Random random, Func<int, bool> globalConstraintsOracle = null)
         {
             this._width = width;
             this._height = height;
-            this._random = random;
-            this._verticalCandidateOracle = verticalCandidateOracle;
-            this._horizontalCandidateOracle = horizontalCandidateOracle;
-            this._evenTable = BitEnumerators.AllEven(_width).Where(u => u!= 0).ToList();
-            _preComputedEvenTables = new Dictionary<int, IList<int>>();
-            foreach (short inflow in _evenTable)
+            
+            if (globalConstraintsOracle == null)
             {
-                _preComputedEvenTables.Add(inflow, new List<int>());
-                foreach (short outflow in _evenTable)
-                {
-                    if (!ValidPathRowEnumerator.ValidRows(_width, inflow).Contains(outflow))
-                    {
-                        _preComputedEvenTables[inflow].Add(outflow);
-                    }
-                }
+                ValidPathRowEnumerator.BuildEvenTables(width);
+            }
+            else
+            {
+                ValidPathRowEnumerator.BuildEvenTablesWithConstraints(width, globalConstraintsOracle);
             }
         }
         
@@ -80,7 +65,7 @@ namespace CrawfisSoftware.PCG
             {
                 int inflow = 0;
                 components = InitializeComponents(verticalPaths[0]);
-                foreach (int outflow in _evenTable)
+                foreach (int outflow in BitEnumerators.AllEven(_width))
                 {
                     int horizontalSpans;
                     verticalPaths[1] = outflow;
@@ -106,23 +91,19 @@ namespace CrawfisSoftware.PCG
             if (index > 0 && index < _height - 1)
             {
                 int inflow = verticalPaths[index];
-                foreach (short outflow in _evenTable)
+                foreach (short outflow in ValidPathRowEnumerator.ValidRowList(_width, inflow))
                 {
-                    if (!_preComputedEvenTables[inflow].Contains(outflow))
+                    verticalPaths[index + 1] = outflow;
+                    if (ValidateAndUpdateComponents(inflow, outflow, components, index,
+                            out int horizontalSpans))
                     {
-                        int horizontalSpans;
-                        verticalPaths[index + 1] = outflow;
-                        if (ValidateAndUpdateComponents(inflow, outflow, components, index,
-                                out horizontalSpans))
+                        horizontalPaths[index] = horizontalSpans;
+                        var copy = metrics.Copy();
+                        copy.CalculateMetricCurrentRow(inflow, outflow, horizontalSpans);
+                        foreach (var newGrid in EnumerateRecursive(index + 1, verticalPaths, horizontalPaths,
+                                     components, copy.Copy()))
                         {
-                            horizontalPaths[index] = horizontalSpans;
-                            var copy = metrics.Copy();
-                            copy.CalculateMetricCurrentRow(inflow, outflow, horizontalSpans);
-                            foreach (var newGrid in EnumerateRecursive(index + 1, verticalPaths, horizontalPaths,
-                                         components, copy.Copy()))
-                            {
-                                yield return newGrid;
-                            }
+                            yield return newGrid;
                         }
                     }
                 }
@@ -138,9 +119,6 @@ namespace CrawfisSoftware.PCG
                 if (UpdateLastRowAndValidateComponent(ref horizontalPaths, inflow, index, components))
                 {
                     metrics.CalculateMetricCurrentRow(inflow, 0, horizontalPaths[_height-1]);
-                    Console.WriteLine($"Length: {metrics.TotalLen}");
-                    Console.WriteLine($"Straights: {metrics.Straights}");
-                    Console.WriteLine($"Turns: {metrics.Turns}");
                     yield return (verticalPaths, horizontalPaths);
                     
                 }

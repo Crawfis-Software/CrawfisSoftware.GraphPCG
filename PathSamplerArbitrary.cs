@@ -14,7 +14,7 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     public class PathSamplerArbitrary
     {
-        private const int MaxDefaultAttempts = 10000;
+        private const int MaxDefaultAttempts = 1000;
         private readonly int _width;
         private readonly int _height;
         private readonly Random _random;
@@ -46,14 +46,16 @@ namespace CrawfisSoftware.PCG
             if (globalConstraintsOracle == null)
             {
                 ValidPathRowEnumerator.BuildOddTables(width);
-                ValidPathRowEnumerator.BuildEvenTables(height);
+                ValidPathRowEnumerator.BuildEvenTables(width);
             }
             else
             {
                 ValidPathRowEnumerator.BuildOddTablesWithConstraints(width, globalConstraintsOracle);
-                ValidPathRowEnumerator.BuildEvenTables(height);
+                ValidPathRowEnumerator.BuildEvenTablesWithConstraints(width, globalConstraintsOracle);
             }
         }
+        
+        
 
         /// <summary>
         /// Iterate over all non-cyclical paths from a starting cell to an ending cell on an open verticalGrid.
@@ -65,242 +67,274 @@ namespace CrawfisSoftware.PCG
         public (IList<int> vertical, IList<int> horizontal)
             Sample((int row, int column) start, (int row, int column) end)
         {
-            do
+            int counter = 0;
+            for (int i = 0; i < MaxDefaultAttempts; i++)
             {
-                bool isStartVertical = _random.Next(10) <= 9;
-                bool isEndVertical = _random.Next(10) <= 9;
-            
-                int startColumn = start.column;
-                int endColumn = end.column;
-            
-                (int row, int column) newStart = start;
-                (int row, int column) newEnd = end;
-            
-                if (isStartVertical)
+                try
                 {
-                    startColumn = _random.Next(_width);
-                    newStart = (start.row, startColumn);
-                }
-            
-                if (isEndVertical)
-                {
-                    endColumn = _random.Next(_width);
-                    newEnd = (end.row, endColumn);
-                }
-            
-                (IList<int> vertical, IList<int> horizontal) values = VerticalSample(newStart, newEnd);
-                
-                bool startCarved = CarveHorizontal(ref values.horizontal, ref values.vertical, start.row, start.column, startColumn);
-                bool endCarved = CarveHorizontal(ref values.horizontal, ref values.vertical,end.row, end.column, endColumn);
-                if (startCarved && endCarved)
-                {
-                    return (values.vertical, values.horizontal);
-                }
-                
-            } while (true);
-            
-            return VerticalSample(start, end);
+                    int[] verticalPaths = new int[_height + 1];
+                    int[] horizontalPaths = new int[_height];
+                    ValidPathRowEnumerator.PointToEvenTable();
 
+                    int higherRow = start.row > end.row ? start.row : end.row;
+
+                    #region FirstRow
+
+                    int inflow = verticalPaths[0] = 0;
+                    IList<IList<int>> components = InitializeComponents(verticalPaths[0]);
+                    IList<short> rowLists =
+                        ValidPathRowEnumerator.ValidRowList(_width, RandomEvenBitPattern(_width, _random)).ToList();
+                    int outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                    int horizontalSpans;
+                    counter = 0;
+                    while (!ValidateAndUpdateComponents(inflow, outflowCandidate, components, 0,
+                               out horizontalSpans, 1) ||
+                           !CheckOneRowBeforeStartAndEnd(outflowCandidate, 0, start.row, end.row))
+                    {
+                        outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                        counter++;
+                        if (counter >= MaxDefaultAttempts)
+                        {
+                            throw new Exception("Too many attempts");
+                        }
+                    }
+                    verticalPaths[1] = outflowCandidate;
+                    horizontalPaths[0] = horizontalSpans;
+
+                    #endregion
+
+                    #region MiddleRows
+                    
+                    for (int currentRow = 1; currentRow < _height - 2; currentRow++)
+                    { 
+                        inflow = verticalPaths[currentRow];
+
+                        #region StartRowCase
+
+                        int alteredInflow = inflow;
+                        if (currentRow == start.row)
+                        {
+                            // Exits from bottom
+                            if (IsBitSet(inflow, start.column))
+                            {
+                                alteredInflow = BlockBit(alteredInflow, start.column);
+                                if (alteredInflow == 0)
+                                {
+                                    throw new Exception("Inflow cannot be zero");
+                                }
+                                DetermineTable(alteredInflow);
+                                rowLists = ValidPathRowEnumerator.ValidRowList(_width, alteredInflow).ToList();
+                                outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                                counter = 0;
+                                while (!ValidateAndUpdateComponents(alteredInflow, outflowCandidate, components,
+                                           currentRow,
+                                           out horizontalSpans, 1) ||
+                                       IsBitSet(outflowCandidate, start.column) ||
+                                       TotalNumberOfSetBitsBeforeAPos(inflow, outflowCandidate, start.column) % 2 != 0)
+                                {
+                                    outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                                    counter++;
+                                    if (counter >= MaxDefaultAttempts)
+                                    {
+                                        throw new Exception("Too many attempts");
+                                    }
+                                }
+                                verticalPaths[currentRow + 1] = outflowCandidate;
+                                horizontalPaths[currentRow] = horizontalSpans;
+                            }
+                            // Not Exit from bottom
+                            else
+                            {
+                                alteredInflow = OpenBit(alteredInflow, start.column);
+                                components[currentRow][start.column] = -1;
+                                DetermineTable(alteredInflow);
+                                rowLists = ValidPathRowEnumerator.ValidRowList(_width, alteredInflow).ToList();
+                                outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                                counter = 0;
+                                while (!(ValidateAndUpdateComponents(alteredInflow, outflowCandidate, components,
+                                           currentRow,
+                                           out horizontalSpans, 1)))
+                                {
+                                    outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                                    counter++;
+                                    if (counter >= MaxDefaultAttempts)
+                                    {
+                                        throw new Exception("Too many attempts");
+                                    }
+                                }
+
+                                verticalPaths[currentRow + 1] = outflowCandidate;
+                                horizontalPaths[currentRow] = horizontalSpans;
+                            }
+                        }
+
+                        #endregion
+                        #region EndRowCase
+
+                        if (currentRow == end.row)
+                        {    
+                            // Exits from bottom
+                            if (IsBitSet(inflow, end.column))
+                            {
+                                alteredInflow = BlockBit(alteredInflow, end.column);
+                                if (alteredInflow == 0)
+                                { 
+                                    throw new Exception("Inflow cannot be zero");
+                                }
+                                DetermineTable(alteredInflow);
+                                rowLists = ValidPathRowEnumerator.ValidRowList(_width, alteredInflow).ToList();
+                                outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                                counter = 0;
+                                while (!ValidateAndUpdateComponents(alteredInflow, outflowCandidate, components,
+                                           currentRow,
+                                           out horizontalSpans, 1) ||
+                                       IsBitSet(outflowCandidate, end.column) ||
+                                       TotalNumberOfSetBitsBeforeAPos(inflow, outflowCandidate, end.column) % 2 != 0)
+                                {
+                                    outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                                    counter++;
+                                    if (counter >= MaxDefaultAttempts)
+                                    {
+                                        throw new Exception("Too many attempts");
+                                    }
+                                }
+
+                                verticalPaths[currentRow + 1] = outflowCandidate;
+                                horizontalPaths[currentRow] = horizontalSpans;
+                            }
+                            // Not Exit from bottom
+                            else
+                            {  
+                                alteredInflow = OpenBit(inflow, end.column);
+                                components[currentRow][end.column] = -2;
+                                DetermineTable(alteredInflow);
+                                rowLists = ValidPathRowEnumerator.ValidRowList(_width, alteredInflow).ToList();
+                                outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                                counter = 0;
+                                while (!(ValidateAndUpdateComponents(alteredInflow, outflowCandidate, components,
+                                           currentRow,
+                                           out horizontalSpans, 1)))
+                                {
+                                    outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                                    counter++;
+                                    if (counter >= MaxDefaultAttempts)
+                                    {
+                                        throw new Exception("Too many attempts");
+                                    }
+                                }
+
+                                verticalPaths[currentRow + 1] = outflowCandidate;
+                                horizontalPaths[currentRow] = horizontalSpans;
+                            }
+                        }
+
+                        #endregion
+
+                        #region OtherCases
+                        if (currentRow != start.row && currentRow != end.row)
+                        {
+                            DetermineTable(alteredInflow);
+                            rowLists = ValidPathRowEnumerator.ValidRowList(_width, alteredInflow).ToList();
+                            outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                            counter = 0;
+                            while (!(ValidateAndUpdateComponents(alteredInflow, outflowCandidate, components,
+                                       currentRow,
+                                       out horizontalSpans, 1)) ||
+                                   !CheckOneRowBeforeStartAndEnd(outflowCandidate, currentRow, start.row, end.row))
+                            {
+                                outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                                counter++;
+                                if (counter >= MaxDefaultAttempts)
+                                {
+                                    throw new Exception("Too many attempts");
+                                }
+                            }
+
+                            verticalPaths[currentRow + 1] = outflowCandidate;
+                            horizontalPaths[currentRow] = horizontalSpans;
+                        }
+                        #endregion
+
+                        // Check if merged
+                        if (currentRow > higherRow && NumberOfDistinctValues(components[currentRow + 1]) < 3)
+                        {
+                            throw new Exception($"Not Merged");
+                        }
+
+                    }
+
+                    #endregion
+
+                    #region LastTwoRows
+
+                    bool lastRowFixed = false;
+                    counter = 0;
+                    while (!lastRowFixed)
+                    {
+                        counter++;
+                        int secondToLastRow = _height - 2;
+                        inflow = verticalPaths[secondToLastRow];
+                        rowLists = ValidPathRowEnumerator.ValidRowList(_width, inflow).ToList();
+                        outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                        while (!ValidateAndUpdateComponents(inflow, outflowCandidate, components, secondToLastRow,
+                                   out horizontalSpans) ||
+                               NumberOfDistinctValues(components[secondToLastRow + 1]) < 3 ||
+                               !CheckOneRowBeforeStartAndEnd(outflowCandidate, secondToLastRow, start.row, end.row))
+                        {
+                            outflowCandidate = rowLists[_random.Next(rowLists.Count - 1)];
+                        }
+
+                        verticalPaths[secondToLastRow + 1] = outflowCandidate;
+                        horizontalPaths[secondToLastRow] = horizontalSpans;
+
+                        int lastRow = _height - 1;
+                        inflow = verticalPaths[lastRow];
+                        if (UpdateLastRowAndValidateComponent(ref horizontalPaths, inflow, lastRow, components))
+                        {
+                            lastRowFixed = true;
+                        }
+
+                        if (counter >= MaxDefaultAttempts)
+                        {
+                            throw new Exception("Last Row Not Fixable");
+                        }
+                    }
+
+                    #endregion
+
+                    return (verticalPaths, horizontalPaths);
+                }
+                catch (Exception ex)
+                {
+                    // ignored
+                }
+            }
+
+            throw new Exception("Search Too Long");
         }
 
-        private bool CarveHorizontal(ref IList<int> horizontal, ref IList<int> vertical, int row, int column, int newColumn)
+
+        private bool CheckOneRowBeforeStartAndEnd(int outflow, int currentRow, int startRow, int endRow)
         {
-            if (column == newColumn)
+            if (currentRow == startRow - 1 || currentRow == endRow - 1)
             {
-                return true;
+                if (CountSetBits(outflow) == 1)
+                {
+                    return false;
+                }
             }
-            int span = horizontal[row];
-            var spans = ValidPathRowEnumerator.InflowsFromBits(_width, span);
-            
-            if (spans.Contains(column) || spans.Contains(column - 1))
-            {
-                return false;
-            }
-            
-            int small = column <= newColumn ? column : newColumn;
-            int big = column > newColumn ? column : newColumn;
-            
-            int inflow = vertical[row];
-            int outflowIndex = row + 1;
-            if (row + 1 >= _height)
-            {
-                outflowIndex = row;
-            }
-            int outflow = vertical[outflowIndex];
-            
-            var inflows = ValidPathRowEnumerator.InflowsFromBits(_width, inflow);
-            var outflows = ValidPathRowEnumerator.InflowsFromBits(_width, outflow);
-            IOrderedEnumerable<int> between = inflows.Where(n => n >= small && n <= big).OrderBy(n => n);
-
-            if (between.Any())
-            {
-                return false;
-            }
-            
-            between = outflows.Where(n => n >= small && n <= big).OrderBy(n => n);
-
-            if (between.Any())
-            {
-                return false;
-            }
-
-            between = spans.Where(n => n >= small && n <= big).OrderBy(n => n);
-
-            if (between.Any())
-            {
-                return false;
-            }
-
-            for (int j = small; j < big; j++)
-            {
-                span |= 1 << j;
-            }
-
-            
-            horizontal[row] = span;
             return true;
         }
-        
-         private (IList<int> vertical, IList<int> horizontal) 
-             VerticalSample((int row, int column) start, (int row, int column) end)
+        private void DetermineTable(int inflow)
         {
-            int MAX_SEARCH_ATTEMPTS = 1000000;
-
-            int pathID = 0;
-            var verticalPaths = new int[_height];
-            var horizontalPaths = new int[_height];
-            IList<IList<int>> components;
-            int overAllSearch = 0;
-            do
+            if (EnumerationUtilities.CountSetBits(inflow) % 2 == 0)
             {
                 ValidPathRowEnumerator.PointToEvenTable();
-                verticalPaths[0] = EnumerationUtilities.RandomEvenBitPattern(_width, _random);
-                components = InitializeComponents(verticalPaths[0]);
-                UpdateHorizontalRow(ref horizontalPaths, verticalPaths[0], 0);
-
-                int horizontalSpans = 0;
-
-                bool found = false;
-                for (int currentRow = 0; currentRow < _height - 2; currentRow++)
-                {
-                    int inFlow = verticalPaths[currentRow];
-                    int unmodifiedInflow = inFlow;
-                    var inFlows = ValidPathRowEnumerator.InflowsFromBits(_width, inFlow);
-                    var inFlowComponents = new List<int>(inFlows.Count);
-                    for (int i = 0; i < inFlows.Count; i++)
-                        inFlowComponents.Add(components[currentRow][inFlows[i]]);
-                    
-                    bool startCellVisited = false;
-                    bool endCellVisited = false;
-                    
-                    if (currentRow == start.row - 1)
-                    {
-                        if (inFlows.Contains(start.column))
-                        {
-                            inFlows.Remove(start.column);
-                            inFlow &= ~(1 << start.column);
-                            startCellVisited = true;
-                        }
-                    }
-                    
-                    if (currentRow == end.row - 1)
-                    {
-                        if (inFlows.Contains(end.column))
-                        {
-                            inFlows.Remove(end.column);
-                            inFlow &= ~(1 << end.column);
-                            startCellVisited = true;
-                            endCellVisited = true;
-                        }
-                    }
-
-                    if (EnumerationUtilities.CountSetBits(inFlow) % 2 == 0)
-                    {
-                        ValidPathRowEnumerator.PointToEvenTable();
-                    }
-                    else
-                    {
-                        ValidPathRowEnumerator.PointToOddTable();
-                    }
-                    
-                    IList<short> rowLists = ValidPathRowEnumerator.ValidRowList(_width, inFlow).ToList();
-                    int listLen = rowLists.Count;
-                    if (listLen == 0)
-                        break;
-                    int rowCandidate = rowLists[_random.Next(listLen - 1)];
-                    bool validRow = false;
-                    bool validStartCell = true;
-                    bool validEndCell = true;
-                    bool validInflow = true;
-                    int rowSearchAttemp = 0;
-                    do
-                    {
-                        if (currentRow != _height - 2)
-                        {
-                            rowCandidate = rowLists[_random.Next(listLen - 1)];
-
-                            validRow = ValidateAndUpdateComponents(inFlow, rowCandidate, components, currentRow,
-                                out horizontalSpans, _height - currentRow);
-
-                            if (currentRow == start.row - 1)
-                            {
-                                if (!startCellVisited)
-                                {
-                                    var outflows = ValidPathRowEnumerator.InflowsFromBits(_width, rowCandidate);
-                                    if (!outflows.Contains(start.column))
-                                    {
-                                        rowCandidate |= 1 << start.column;
-                                        components[currentRow + 1][start.column] = -5;
-                                    }
-                                }
-
-                                validStartCell = GetEdges(unmodifiedInflow, rowCandidate, horizontalSpans, start.column)
-                                    .Count(s => s == 1) == 1;
-                            }
-
-                            if (currentRow == end.row - 1)
-                            {
-                                if (!endCellVisited)
-                                {
-                                    var outflows = ValidPathRowEnumerator.InflowsFromBits(_width, rowCandidate);
-                                    if (!outflows.Contains(end.column))
-                                    {
-                                        rowCandidate |= 1 << end.column;
-                                        components[currentRow + 1][end.column] = -12;
-                                    }
-                                }
-
-                                validEndCell = GetEdges(unmodifiedInflow, rowCandidate, horizontalSpans, end.column)
-                                    .Count(s => s == 1) == 1;
-                            }
-
-                            rowSearchAttemp++;
-                            if (rowSearchAttemp > MAX_SEARCH_ATTEMPTS)
-                            {
-                                break;
-                            }
-                        }
-                    } while (!(validStartCell && validRow && validEndCell));
-
-                    verticalPaths[currentRow + 1] = rowCandidate;
-                    horizontalPaths[currentRow + 1] = horizontalSpans;
-                    if (currentRow == _height - 3)
-                    {
-                        found = true;
-                    }
-
-                }
-                overAllSearch++;
-                if (found)
-                {
-                    break;
-                }
-            }while(true);
-
-
-            UpdateHorizontalRow(ref horizontalPaths, verticalPaths[_height - 2], _height - 1);
-            
-            return (verticalPaths, horizontalPaths);
+            }
+            else
+            {
+                ValidPathRowEnumerator.PointToOddTable();
+            }
         }
 
         private IList<IList<int>> InitializeComponents(int firstRow)
@@ -327,22 +361,6 @@ namespace CrawfisSoftware.PCG
             return components;
         }
         
-
-        private void UpdateHorizontalRow(ref int[] horizontalPaths, int inflow, int rowNumber)
-        {
-            IList<int> inflowList = ValidPathRowEnumerator.InflowsFromBits(_width, inflow);
-            int horizontal = 0;
-            for (int i = 1; i < inflowList.Count; i += 2)
-            {
-                int start = inflowList[i-1];
-                int end = inflowList[i];
-                for (int j = start; j < end; j++)
-                {
-                    horizontal |= 1 << j;
-                }
-            }
-            horizontalPaths[rowNumber] = horizontal;
-        }
         
         private int[] GetEdges(int inflow, int outflow,int horizontalSpan, int cellNumber)
         {
@@ -366,7 +384,51 @@ namespace CrawfisSoftware.PCG
             return edges;
         }
         
-        
+        private bool UpdateLastRowAndValidateComponent(ref int[] horizontalPaths, int inflow, int rowNumber, IList<IList<int>> components)
+        {
+            IList<int> inflowList = ValidPathRowEnumerator.InflowsFromBits(_width, inflow);
+            IList<int> componentList = components[rowNumber];
+            int horizontal = 0;
+            for (int i = 1; i < inflowList.Count; i += 2)
+            {
+                int start = inflowList[i-1];
+                int end = inflowList[i];
+                for (int j = start; j < end; j++)
+                {
+                    horizontal |= 1 << j;
+                }
+
+                componentList[end] = componentList[start];
+            }
+            if (NumberOfDistinctValues(componentList) != 2)
+            {
+                return false;
+            }
+            horizontalPaths[rowNumber] = horizontal;
+            return true;
+        }
+
+        private bool IsBitSet(int inflow, int pos)
+        {
+            return ValidPathRowEnumerator.InflowsFromBits(_width, inflow).Contains(pos);
+        }
+
+        private int BlockBit(int bit, int pos)
+        {
+            return bit &= ~(1 << pos);
+        }
+
+        private int OpenBit(int bit, int pos)
+        {
+            return bit |= (1 << pos);
+        }
+
+        private int TotalNumberOfSetBitsBeforeAPos(int inflow, int outflow, int pos)
+        {
+            List<int> inflows = ValidPathRowEnumerator.InflowsFromBits(_width, inflow);
+            List<int> outflows = ValidPathRowEnumerator.InflowsFromBits(_width, outflow);
+            return inflows.Count(n => n < pos) + outflows.Count(n => n < pos);
+        }
         
     }
 }
