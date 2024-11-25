@@ -49,12 +49,10 @@ namespace CrawfisSoftware.PCG
             if (globalConstraintsOracle == null)
             {
                 ValidPathRowEnumerator.BuildEvenTables(_tableWidth);
-                //ValidPathRowEnumerator.BuildOddTables(_tableWidth);
             }
             else
             {
                 ValidPathRowEnumerator.BuildEvenTablesWithConstraints(_tableWidth, globalConstraintsOracle);
-                //ValidPathRowEnumerator.BuildOddTablesWithConstraints(_tableWidth, globalConstraintsOracle);
             }
             
         }
@@ -67,12 +65,16 @@ namespace CrawfisSoftware.PCG
 
         /// <returns>A value tuple of a list of vertical bits and a list of horizontal bits.</returns>
         public (IList<int> vertical, IList<int> horizontal)
-            Sample()
+            Sample(int numColumns)
         {
             const int MAX_ATTEMPTS = 1000000;
             int currentAttempt = 0;
-            int[] verticalLeft = new int[_height + 1];
-            int[] verticalRight = new int[_height + 1];
+
+            IList<int[]> verticals = new List<int[]>();
+            for (int i = 0; i < _height + 1; i++)
+            {
+                verticals.Add(new int[numColumns]);
+            }
             int[] verticalPaths = new int[_height + 1];
             int[] horizontalPaths = new int[_height];
             
@@ -86,147 +88,234 @@ namespace CrawfisSoftware.PCG
                     #region FirstRow
             
                     int inflow = verticalPaths[0] = 0;
-                    IList<IList<int>> components = InitializeComponents(verticalPaths[0]);
+                    IList<IList<int>> components = InitializeComponents(verticalPaths[0], numColumns);
                     IList<short> rowLists =
                         ValidPathRowEnumerator.ValidRowList(_tableWidth, RandomEvenBitPattern(_tableWidth, _random))
                             .ToList();
-                    int outflowCandidateLeft = rowLists[_random.Next(rowLists.Count - 1)];
-                    int outflowCandidateRight = rowLists[_random.Next(rowLists.Count - 1)];
-                    int outflowCandidateLeftMod = BlockLowestSetBit(outflowCandidateLeft);
-                    int outflowCandidateRightMod = BlockHighestSetBit(outflowCandidateRight);
-                    if (_random.Next(2) == 0)
+                    int[] outflowCandidatesOriginal = new int[numColumns];
+                    int[] outflowCandidatesModified = new int[numColumns];
+                    
+                    bool previousBlocked = false;
+                    for (int i = 0; i < numColumns; i++)
                     {
-                        outflowCandidateLeftMod = outflowCandidateLeft;
-                        outflowCandidateRightMod = outflowCandidateRight;
+                        outflowCandidatesOriginal[i] = rowLists[_random.Next(rowLists.Count - 1)];
+                        outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
+                        if (previousBlocked)
+                        {
+                            outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                        }
+
+                        if (_random.Next(2) == 0 && i != numColumns - 1)
+                        {
+                            outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                            previousBlocked = true;
+                        }
+                        else
+                        {
+                            previousBlocked = false;
+                        }
                     }
 
-                    int outflowCandidate = ConcatinateTwoBits(outflowCandidateLeftMod, outflowCandidateRightMod, _width);
+                    int outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
                     int horizontalSpans;
                     while (!ValidateAndUpdateComponents(inflow, outflowCandidate, components, 0,
                                out horizontalSpans))
                     {
-                        outflowCandidateLeft = rowLists[_random.Next(rowLists.Count - 1)];
-                        outflowCandidateRight = rowLists[_random.Next(rowLists.Count - 1)];
-                        outflowCandidateLeftMod = BlockLowestSetBit(outflowCandidateLeft);
-                        outflowCandidateRightMod = BlockHighestSetBit(outflowCandidateRight);
-                        if (_random.Next(2) == 0)
+                        previousBlocked = false;
+                        for (int i = 0; i < numColumns; i++)
                         {
-                            outflowCandidateLeftMod = outflowCandidateLeft;
-                            outflowCandidateRightMod = outflowCandidateRight;
+                            outflowCandidatesOriginal[i] = rowLists[_random.Next(rowLists.Count - 1)];
+                            outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
+                            if (previousBlocked)
+                            {
+                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                            }
+
+                            if (_random.Next(2) == 0 && i != numColumns - 1)
+                            {
+                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                previousBlocked = true;
+                            }
+                            else
+                            {
+                                previousBlocked = false;
+                            }
                         }
-                        outflowCandidate = ConcatinateTwoBits(outflowCandidateLeftMod, outflowCandidateRightMod, _width);
+                        outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
                     }
 
                     verticalPaths[1] = outflowCandidate;
-                    verticalLeft[1] = outflowCandidateLeft;
-                    verticalRight[1] = outflowCandidateRight;
+                    for (int i = 0; i < numColumns; i++)
+                    {
+                        verticals[1][i] = outflowCandidatesOriginal[i];
+                    }
                     horizontalPaths[0] = horizontalSpans;
             
                     #endregion
             
                     #region MiddleRows
-            
+                    
                     for (int currentRow = 1; currentRow < _height - 2; currentRow++)
                     {
                         inflow = verticalPaths[currentRow];
-                        int inflowLeft = verticalLeft[currentRow];
-                        int inflowRight = verticalRight[currentRow];
-            
-                        var rowListsLeft = ValidPathRowEnumerator.ValidRowList(_tableWidth, inflowLeft).ToList();
-                        var rowListsRight = ValidPathRowEnumerator.ValidRowList(_tableWidth, inflowRight).ToList();
-                        outflowCandidateLeft = rowListsLeft[_random.Next(rowListsLeft.Count - 1)];
-                        outflowCandidateRight = rowListsRight[_random.Next(rowListsRight.Count - 1)];
-                        outflowCandidateLeftMod = BlockLowestSetBit(outflowCandidateLeft);
-                        outflowCandidateRightMod = BlockHighestSetBit(outflowCandidateRight);
-                        if (_random.Next(2) == 0)
+                        
+                        int[] middleInflows = new int[numColumns];
+                        for (int i = 0; i < numColumns; i++)
                         {
-                            outflowCandidateLeftMod = outflowCandidateLeft;
-                            outflowCandidateRightMod = outflowCandidateRight;
+                            middleInflows[i] = verticals[currentRow][i];
                         }
-                        outflowCandidate = ConcatinateTwoBits(outflowCandidateLeftMod, outflowCandidateRightMod, _width);
+                    
+                        outflowCandidatesOriginal = new int[numColumns];
+                        outflowCandidatesModified = new int[numColumns];
+                        
+                        previousBlocked = false;
+                        for (int i = 0; i < numColumns; i++)
+                        {
+                            outflowCandidatesOriginal[i] = ValidPathRowEnumerator.ValidRowList
+                                (_tableWidth, middleInflows[i]).OrderBy(x => _random.Next()).First();
+                            outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
+                            if (previousBlocked)
+                            {
+                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                            }
+                    
+                            if (_random.Next(2) == 0 && i != numColumns - 1)
+                            {
+                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                previousBlocked = true;
+                            }
+                            else
+                            {
+                                previousBlocked = false;
+                            }
+                        }
+                        outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
                         while (!(ValidateAndUpdateComponents(inflow, outflowCandidate, components, currentRow,
                                    out horizontalSpans, 1)))
                         {
-                            outflowCandidateLeft = rowListsLeft[_random.Next(rowListsLeft.Count - 1)];
-                            outflowCandidateRight = rowListsRight[_random.Next(rowListsRight.Count - 1)];
-                            outflowCandidateLeftMod = BlockLowestSetBit(outflowCandidateLeft);
-                            outflowCandidateRightMod = BlockHighestSetBit(outflowCandidateRight);
-                            if (_random.Next(2) == 0)
+                            previousBlocked = false;
+                            for (int i = 0; i < numColumns; i++)
                             {
-                                outflowCandidateLeftMod = outflowCandidateLeft;
-                                outflowCandidateRightMod = outflowCandidateRight;
+                                outflowCandidatesOriginal[i] = rowLists[_random.Next(rowLists.Count - 1)];
+                                outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
+                                if (previousBlocked)
+                                {
+                                    outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                }
+                    
+                                if (_random.Next(2) == 0 && i != numColumns - 1)
+                                {
+                                    outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                    previousBlocked = true;
+                                }
+                                else
+                                {
+                                    previousBlocked = false;
+                                }
                             }
-                            outflowCandidate = ConcatinateTwoBits(outflowCandidateLeftMod, outflowCandidateRightMod, _width);
+                            outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
                         }
-            
+                        
                         verticalPaths[currentRow + 1] = outflowCandidate;
-                        verticalLeft[currentRow + 1] = outflowCandidateLeft;
-                        verticalRight[currentRow + 1] = outflowCandidateRight;
+                        for (int i = 0; i < numColumns; i++)
+                        {
+                            verticals[currentRow+1][i] = outflowCandidatesOriginal[i];
+                        }
                         horizontalPaths[currentRow] = horizontalSpans;
-            
+                    
                     }
-            
+                    
                     #endregion
             
                     #region LastTwoRows
-            
+                    
                     bool lastRowFixed = false;
                     int lastRowAttemp = 0;
                     while (!lastRowFixed)
                     {
                         int secondToLastRow = _height - 2;
                         inflow = verticalPaths[secondToLastRow];
-                        int inflowLeft = verticalLeft[secondToLastRow];
-                        int inflowRight = verticalRight[secondToLastRow];
-                        var rowListsLeft = ValidPathRowEnumerator.ValidRowList(_tableWidth, inflowLeft).ToList();
-                        var rowListsRight = ValidPathRowEnumerator.ValidRowList(_tableWidth, inflowRight).ToList();
-                        outflowCandidateLeft = rowListsLeft[_random.Next(rowListsLeft.Count - 1)];
-                        outflowCandidateRight = rowListsRight[_random.Next(rowListsRight.Count - 1)];
-                        outflowCandidateLeftMod = BlockLowestSetBit(outflowCandidateLeft);
-                        outflowCandidateRightMod = BlockHighestSetBit(outflowCandidateRight);
-                        if (_random.Next(2) == 0)
+                        int[] middleInflows = new int[numColumns];
+                        for (int i = 0; i < numColumns; i++)
                         {
-                            outflowCandidateLeftMod = outflowCandidateLeft;
-                            outflowCandidateRightMod = outflowCandidateRight;
+                            middleInflows[i] = verticals[secondToLastRow][i];
                         }
-                        outflowCandidate = ConcatinateTwoBits(outflowCandidateLeftMod, outflowCandidateRightMod, _width);
-            
+                    
+                        outflowCandidatesOriginal = new int[numColumns];
+                        outflowCandidatesModified = new int[numColumns];
+                        
+                        previousBlocked = false;
+                        for (int i = 0; i < numColumns; i++)
+                        {
+                            outflowCandidatesOriginal[i] = ValidPathRowEnumerator.ValidRowList
+                                (_tableWidth, middleInflows[i]).OrderBy(x => _random.Next()).First();
+                            outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
+                            if (previousBlocked)
+                            {
+                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                            }
+                    
+                            if (_random.Next(2) == 0 && i != numColumns - 1)
+                            {
+                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                previousBlocked = true;
+                            }
+                            else
+                            {
+                                previousBlocked = false;
+                            }
+                        }
+                        outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
+                        
                         while (!ValidateAndUpdateComponents(inflow, outflowCandidate, components, secondToLastRow,
                                    out horizontalSpans))
                         {
-                            outflowCandidateLeft = rowListsLeft[_random.Next(rowListsLeft.Count - 1)];
-                            outflowCandidateRight = rowListsRight[_random.Next(rowListsRight.Count - 1)];
-                            outflowCandidateLeftMod = BlockLowestSetBit(outflowCandidateLeft);
-                            outflowCandidateRightMod = BlockHighestSetBit(outflowCandidateRight);
-                            if (_random.Next(2) == 0)
+                            previousBlocked = false;
+                            for (int i = 0; i < numColumns; i++)
                             {
-                                outflowCandidateLeftMod = outflowCandidateLeft;
-                                outflowCandidateRightMod = outflowCandidateRight;
+                                outflowCandidatesOriginal[i] = rowLists[_random.Next(rowLists.Count - 1)];
+                                outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
+                                if (previousBlocked)
+                                {
+                                    outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                }
+                    
+                                if (_random.Next(2) == 0 && i != numColumns - 1)
+                                {
+                                    outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                    previousBlocked = true;
+                                }
+                                else
+                                {
+                                    previousBlocked = false;
+                                }
                             }
-                            outflowCandidate = ConcatinateTwoBits(outflowCandidateLeftMod, outflowCandidateRightMod, _width);
+                            outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
                         }
-            
+                    
                         verticalPaths[secondToLastRow + 1] = outflowCandidate;
-                        verticalLeft[secondToLastRow + 1] = outflowCandidateLeft;
-                        verticalRight[secondToLastRow + 1] = outflowCandidateRight;
+                        for (int i = 0; i < numColumns; i++)
+                        {
+                            verticals[secondToLastRow+1][i] = outflowCandidatesOriginal[i];
+                        }
                         horizontalPaths[secondToLastRow] = horizontalSpans;
-            
+                    
                         int lastRow = _height - 1;
                         inflow = verticalPaths[lastRow];
                         if (UpdateLastRowAndValidateComponent(ref horizontalPaths, inflow,
-                                verticalPaths[secondToLastRow], lastRow, components))
+                                verticalPaths[secondToLastRow], lastRow, components, numColumns))
                         {
                             lastRowFixed = true;
                         }
-            
+                    
                         lastRowAttemp++;
                         if (lastRowAttemp > MaxDefaultAttempts)
                         {
                             throw new TimeoutException("Cannot find a valid last row.");
                         }
-            
+                    
                     }
-            
+                    
                     #endregion
             
                     return (verticalPaths, horizontalPaths);
@@ -269,12 +358,12 @@ namespace CrawfisSoftware.PCG
             }
         }
 
-        private IList<IList<int>> InitializeComponents(int firstRow)
+        private IList<IList<int>> InitializeComponents(int firstRow, int numColumns)
         {
             int[][] components = new int[_height][];
             for (int i = 0; i < _height; i++)
-                components[i] = new int[_tableWidth*2];
-            IList<int> inflowList = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*2, firstRow);
+                components[i] = new int[_tableWidth*numColumns];
+            IList<int> inflowList = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, firstRow);
             int counter = 0;
             int currentComponentNumber = 1;
             for (int i = 0; i < components[0].Count(); i++)
@@ -317,20 +406,29 @@ namespace CrawfisSoftware.PCG
         }
         
         private bool UpdateLastRowAndValidateComponent(ref int[] horizontalPaths, int inflow, 
-            int previousInflow, int rowNumber, IList<IList<int>> components)
+            int previousInflow, int rowNumber, IList<IList<int>> components, int numColumns)
         {
-            List<int> previousInflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*2, previousInflow);
+            List<int> previousInflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, previousInflow);
+            IList<int> currentInflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, inflow);
             
-            int min = previousInflows.Min();
-            int max = previousInflows.Max();
+            int previousMin = previousInflows.Min();
+            int previousMax = previousInflows.Max();
             
-            IList<int> inflowList = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*2, inflow);
+            int currentMin = currentInflows.Min();
+            int currentMax = currentInflows.Max();
+
+            if (previousMin < currentMin || previousMax > currentMax)
+            {
+                return false;
+            }
+            
+            
             IList<int> componentList = components[rowNumber];
             int horizontal = 0;
-            for (int i = 1; i < inflowList.Count; i += 2)
+            for (int i = 1; i < currentInflows.Count; i += 2)
             {
-                int start = inflowList[i-1];
-                int end = inflowList[i];
+                int start = currentInflows[i-1];
+                int end = currentInflows[i];
                 for (int j = start; j < end; j++)
                 {
                     horizontal |= 1 << j;
@@ -391,10 +489,13 @@ namespace CrawfisSoftware.PCG
             return blockedBit;
         }
 
-        private int ConcatinateTwoBits(int bit1, int bit2, int width)
+        private int ConcatinateMultipleBits(IList<int> bits, int width)
         {
-            
-            int mergedBit = (bit1 << width) | bit2;
+            int mergedBit = bits[0];
+            for (int i = 1; i < bits.Count; i++)
+            {
+                mergedBit = (mergedBit << width) | bits[i];
+            }
             return mergedBit;
         }
     }

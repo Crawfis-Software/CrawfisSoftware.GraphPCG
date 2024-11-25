@@ -10,7 +10,7 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     public static class EnumerationUtilities
     {
-        private static int newComponentNum = 1;
+        
         /// <summary>
         /// Defines a function that takes in the state of the Path enumeration including a 
         /// possible new row or vertical bits and returns true if the user wants to allow it, false otherwise.
@@ -53,7 +53,6 @@ namespace CrawfisSoftware.PCG
             //    3) if the number of outflow bits from max(a,d)+1 to b is even, then these are all new components (in pairs). Note outflow at b must be zero.
             //    4) if no match still and e < c, then match b to e.
             //
-            //newComponentNum ++;
             bool isValid = true;
             IList<int> components = componentsGrid[index];
             int width = components.Count;
@@ -67,7 +66,7 @@ namespace CrawfisSoftware.PCG
             int inFlowBitPattern = inFlows;
             int outFlowBitPattern = outFlows;
             horizontalSpans = 0;
-            // Some number larger than all other component numbers (for now)
+            int addedComponentNum = width; // Some number larger than all other component numbers (for now)
             // Find first outflow bit (b)
             while (b < width)
             {
@@ -115,12 +114,12 @@ namespace CrawfisSoftware.PCG
                         //else
                         {
                             numOfOutflowsInSpan -= 1;
-                            newOutflowComponents[i + spanStart] = newComponentNum;
+                            newOutflowComponents[i + spanStart] = addedComponentNum;
                         }
                         if (!rightEdge)
                         {
                             // new loop 
-                            newComponentNum++;
+                            addedComponentNum++;
                             e = i + spanStart;
                             int bitPattern = ((1 << (e - d)) - 1) << d;
                             if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
@@ -198,41 +197,46 @@ namespace CrawfisSoftware.PCG
             }
 
             // Renumber components left to right
-            // for (int i = 0; i < width; i++)
-            // {
-            //     int componentNum = newOutflowComponents[i];
-            //     if (componentNum != 0)
-            //     {
-            //         if (componentRemap.ContainsKey(componentNum))
-            //         {
-            //             newOutflowComponents[i] = componentRemap[componentNum];
-            //         }
-            //     }
-            // }
-            // int lastMatched = 0;
-            // componentRemap.Clear();
-            // int newComponentNum = 1;
-            // for (int i = 0; i < width; i++)
-            // {
-            //     int componentNum = newOutflowComponents[i];
-            //     if (componentNum != 0)
-            //     {
-            //         if (!componentRemap.ContainsKey(componentNum))
-            //         {
-            //             componentRemap[componentNum] = newComponentNum++;
-            //         }
-            //         else
-            //         {
-            //             if (componentRemap[componentNum] - lastMatched > maxNestedComponents)
-            //             {
-            //                 isValid = false;
-            //                 break;
-            //             }
-            //             lastMatched = componentRemap[componentNum];
-            //         }
-            //         newOutflowComponents[i] = componentRemap[componentNum];
-            //     }
-            // }
+            for (int i = 0; i < width; i++)
+            {
+                int componentNum = newOutflowComponents[i];
+                if (componentNum != 0)
+                {
+                    if (componentRemap.ContainsKey(componentNum))
+                    {
+                        newOutflowComponents[i] = componentRemap[componentNum];
+                    }
+                }
+            }
+            int lastMatched = 0;
+            componentRemap.Clear();
+            int newComponentNum = 1;
+            for (int i = 0; i < width; i++)
+            {
+                int componentNum = newOutflowComponents[i];
+                if (componentNum != 0)
+                {
+                    if (!componentRemap.ContainsKey(componentNum))
+                    {
+                        componentRemap[componentNum] = newComponentNum++;
+                    }
+                    else
+                    {
+                        if (componentRemap[componentNum] - lastMatched > maxNestedComponents)
+                        {
+                            isValid = false;
+                            break;
+                        }
+                        lastMatched = componentRemap[componentNum];
+                    }
+                    newOutflowComponents[i] = componentRemap[componentNum];
+                }
+            }
+
+            if (!ValidateEdges(inFlows, outFlows, horizontalSpans, width))
+            {
+                isValid = false;
+            }
             return isValid;
         }
         
@@ -337,6 +341,40 @@ namespace CrawfisSoftware.PCG
         public static bool IsBitSet(int b, int pos)
         {
             return (b & (1 << pos)) != 0;
+        }
+        
+        private static int[] GetEdges(int inflow, int outflow,int horizontalSpan, int cellNumber, int width)
+        {
+            int[] edges = new int[4];
+            List<int> inflows = ValidPathRowEnumerator.InflowsFromBits(width, inflow);
+            List<int> outflows = ValidPathRowEnumerator.InflowsFromBits(width, outflow);
+            List<int> horizontalSpans = ValidPathRowEnumerator.InflowsFromBits(width, horizontalSpan);
+
+            if (cellNumber == 0)
+            {
+                edges[0] = 0;
+            }
+            else
+            {
+                edges[0] = horizontalSpans.Contains(cellNumber - 1) ? 1 : 0; 
+            }
+            edges[1] = outflows.Contains(cellNumber) ? 1 : 0;
+            edges[2] = horizontalSpans.Contains(cellNumber) ? 1 : 0; 
+            edges[3] = inflows.Contains(cellNumber) ? 1 : 0;
+            
+            return edges;
+        }
+
+        private static bool ValidateEdges(int inflow, int outflow, int horizontalSpan, int width)
+        {
+            for (int i = 0; i < width; i++)
+            {
+                int[] edges = GetEdges(inflow, outflow, horizontalSpan, i, width);
+                int count = edges.Count(n => n == 1);
+                if (count == 1 || count == 3 || count == 4)
+                    return false;
+            }
+            return true;
         }
 
 
