@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using static CrawfisSoftware.PCG.EnumerationUtilities;
@@ -36,19 +39,20 @@ namespace CrawfisSoftware.PCG
             Validator horizontalCandidateOracle = null)
         {
             this._width = width;
-            this._height = height + 1;
+            this._height = height;
             this._random = random;
             this._verticalCandidateOracle = verticalCandidateOracle;
             this._horizontalCandidateOracle = horizontalCandidateOracle;
 
             if (globalConstraintsOracle == null)
             {
-                ValidPathRowEnumerator.BuildOddTables(width);
+                ValidPathRowEnumerator.BuildOddTables(_width);
             }
             else
             {
-                ValidPathRowEnumerator.BuildOddTablesWithConstraints(width, globalConstraintsOracle);
+                ValidPathRowEnumerator.BuildOddTablesWithConstraints(_width, globalConstraintsOracle);
             }
+            
         }
 
         /// <summary>
@@ -58,120 +62,121 @@ namespace CrawfisSoftware.PCG
         /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
 
         /// <returns>A value tuple of a list of vertical bits and a list of horizontal bits.</returns>
-        public (IList<int> vertical, IList<int> horizontal) Sample(int start, int end)
+        public (IList<int> vertical, IList<int> horizontal)
+            Sample(int start, int end)
         {
-            int pathID = 0;
-            var inFlow = new List<int>() { start };
-            var verticalPaths = new int[_height];
-            var horizontalPaths = new int[_height];
-            int[][] components = new int[_height][];
-            for (int i = 0; i < _height; i++)
-                components[i] = new int[_width];
-            components[0][start] = 1;
-            verticalPaths[0] = 1 << start; // row;
-            int endRow = 1 << end;
-            verticalPaths[_height - 1] = endRow;
+            const int MAX_ATTEMPTS = 1000000;
+            int currentAttempt = 0;
+            int[] verticalPaths = new int[_height + 1];
+            int[] horizontalPaths = new int[_height];
             
-            int attempt = 0;
-            while (attempt < MaxDefaultAttempts)
+
+            while (currentAttempt < MAX_ATTEMPTS)
             {
                 try
                 {
-                    return SampleRecursive(_width, _height, 0, verticalPaths, horizontalPaths, components, pathID,
-                        _verticalCandidateOracle, _horizontalCandidateOracle);
-                }
-                catch (Exception)
-                {
-                    attempt++;
-                }
-            }
-            throw new Exception("Unable to find a path");
-
-        }
-
-
-        private (IList<int> vertical, IList<int> horizontal) SampleRecursive(int width, int height, int index,
-            IList<int> verticalGrid, IList<int> horizontalGrid,
-            IList<IList<int>> components, int pathID,
-            Validator rowCandidateOracle = null,
-            Validator horizontalCandidateOracle = null)
-        {
-            int horizontalSpans;
-            if (index == (height - 2))
-            {
-                int lastRowAttempts = 0;
-                while (lastRowAttempts < MaxDefaultAttempts)
-                {
-                    if (ValidateAndUpdateComponents(verticalGrid[index], verticalGrid[height - 1], components, index,
-                            out horizontalSpans))
+                    ValidPathRowEnumerator.PointToOddTable();
+            
+                    #region FirstRow
+            
+                    int inflow = verticalPaths[0] = 1 << start;
+                    int[][] components = new int[_height + 1][];
+                    for (int i = 0; i < _height + 1; i++)
+                        components[i] = new int[_width];
+                    components[0][start] = 1;
+                    IList<short> rowLists =
+                        ValidPathRowEnumerator.ValidRowList(_width, inflow )
+                            .ToList();
+                    int outflowCandidate = rowLists[_random.Next(0, rowLists.Count)];
+                    int horizontalSpans;
+                    while (!ValidateAndUpdateComponents(inflow, outflowCandidate, components, 0,
+                               out horizontalSpans))
                     {
-                        if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, height - 1,
-                                horizontalSpans, verticalGrid, horizontalGrid, components))
-                        {
-                            foreach (var row in components)
-                            {
-                                Console.WriteLine(string.Join(",",row));
-                            }
-                            horizontalGrid[height - 1] = horizontalSpans;
-                            
-                            var verticalPaths = new int[_height -1];
-                            var horizontalPaths = new int[_height -1];
-                            // Shift Everything by 1 with new grid
-                             for (int i = 0; i < _height - 1; i++)
-                             {
-                                 verticalPaths[i] = verticalGrid[i + 1];
-                                 horizontalPaths[i] = horizontalGrid[i + 1];
-                             }
-
-
-                             return (verticalPaths, horizontalPaths);
-                        }
+                        outflowCandidate = rowLists[_random.Next(0, rowLists.Count)];
                     }
 
-                    lastRowAttempts++;
-                }
-                if (lastRowAttempts == MaxDefaultAttempts)
-                    throw new Exception("Unable to find a valid last row.");
-
-            }
+                    verticalPaths[1] = outflowCandidate;
+                    horizontalPaths[0] = horizontalSpans;
             
-
-            int inFlow = verticalGrid[index];
-            var inFlows = ValidPathRowEnumerator.InflowsFromBits(width, inFlow);
-            var inFlowComponents = new List<int>(inFlows.Count);
-            for (int i = 0; i < inFlows.Count; i++)
-                inFlowComponents.Add(components[index][inFlows[i]]);
-
-            int attempts = 0;
-            IList<short> rowLists = ValidPathRowEnumerator.ValidRowList(width, verticalGrid[index]).ToList();
-            int listLen = rowLists.Count;
-            short rowCandidate = rowLists[_random.Next(listLen)];
+                    #endregion
             
-            while (attempts < MaxDefaultAttempts)
-            {
-                if (rowCandidateOracle == null ||
-                    rowCandidateOracle(pathID, index + 1, rowCandidate, verticalGrid, horizontalGrid, components))
-                {
-                    verticalGrid[index + 1] = rowCandidate;
-                    if (ValidateAndUpdateComponents(inFlow, rowCandidate, components, index, out horizontalSpans,
-                            height - index))
+                    #region MiddleRows
+                    
+                    for (int currentRow = 1; currentRow < _height - 2; currentRow++)
                     {
-                        if (horizontalCandidateOracle == null || horizontalCandidateOracle(pathID, index + 1,
-                                horizontalSpans, verticalGrid, horizontalGrid, components))
+                        inflow = verticalPaths[currentRow];
+                        rowLists =
+                            ValidPathRowEnumerator.ValidRowList(_width, inflow)
+                                .ToList();
+                        outflowCandidate = rowLists[_random.Next(0, rowLists.Count)];
+                        while (!(ValidateAndUpdateComponents(inflow, outflowCandidate, components, currentRow,
+                                   out horizontalSpans, 1)))
                         {
-                            horizontalGrid[index + 1] = horizontalSpans;
-                            return SampleRecursive(width, height, index + 1, verticalGrid, horizontalGrid, components,
-                                pathID++, rowCandidateOracle, horizontalCandidateOracle);
-
+                            outflowCandidate = rowLists[_random.Next(0, rowLists.Count)];
                         }
+                        
+                        verticalPaths[currentRow + 1] = outflowCandidate;
+                        horizontalPaths[currentRow] = horizontalSpans;
+                    }
+                    
+                    #endregion
+            
+                    #region LastTwoRows
+                    
+                    bool lastRowFixed = false;
+                    int lastRowAttemp = 0;
+                    while (!lastRowFixed)
+                    {
+                        int secondToLastRow = _height - 2;
+                        inflow = verticalPaths[secondToLastRow];
+                        rowLists =
+                            ValidPathRowEnumerator.ValidRowList(_width, inflow)
+                                .ToList();
+                        outflowCandidate = rowLists[_random.Next(0, rowLists.Count)];
+                        
+                        while (!ValidateAndUpdateComponents(inflow, outflowCandidate, components, secondToLastRow,
+                                   out horizontalSpans))
+                        {
+                            outflowCandidate = rowLists[_random.Next(0, rowLists.Count)];
+                        }
+                    
+                        verticalPaths[secondToLastRow + 1] = outflowCandidate;
+                        horizontalPaths[secondToLastRow] = horizontalSpans;
+                    
+                        int lastRow = _height - 1;
+                        inflow = verticalPaths[lastRow];
+                        int lastOutflow = 1 << end;
+                        if (ValidateAndUpdateComponents(inflow, lastOutflow, components, lastRow,
+                                   out horizontalSpans))
+                        {
+                            lastRowFixed = true;
+                            horizontalPaths[lastRow] = horizontalSpans;
+                        }
+                    
+                        lastRowAttemp++;
+                        if (lastRowAttemp > MaxDefaultAttempts)
+                        {
+                            throw new TimeoutException("Cannot find a valid last row.");
+                        }
+                    
+                    }
+                    
+                    #endregion
+            
+                    return (verticalPaths, horizontalPaths);
+                }
+                catch (TimeoutException e)
+                {
+                    currentAttempt++;
+                    if (currentAttempt > MaxDefaultAttempts)
+                    {
+                        throw new TimeoutException("Search Too Long.");
                     }
                 }
-
-                attempts++;
-                rowCandidate= rowLists[_random.Next(listLen)];
             }
+            return  (verticalPaths, horizontalPaths);
             
-            return (null, null);
+
         }
     }
 }
