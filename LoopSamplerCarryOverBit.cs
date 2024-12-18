@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using static CrawfisSoftware.PCG.EnumerationUtilities;
 
 namespace CrawfisSoftware.PCG
@@ -59,7 +60,7 @@ namespace CrawfisSoftware.PCG
         /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
 
         /// <returns>A value tuple of a list of vertical bits and a list of horizontal bits.</returns>
-        public (IList<int> vertical, IList<int> horizontal)
+        public (IList<BigInteger> vertical, IList<BigInteger> horizontal)
             Sample(int numColumns)
         {
             const int MAX_ATTEMPTS = 1000000;
@@ -70,8 +71,8 @@ namespace CrawfisSoftware.PCG
             {
                 verticals.Add(new int[numColumns]);
             }
-            int[] verticalPaths = new int[_height + 1];
-            int[] horizontalPaths = new int[_height];
+            BigInteger[] verticalPaths = new BigInteger[_height + 1];
+            BigInteger[] horizontalPaths = new BigInteger[_height];
             
 
             while (currentAttempt < MAX_ATTEMPTS)
@@ -82,8 +83,8 @@ namespace CrawfisSoftware.PCG
             
                     #region FirstRow
             
-                    int inflow = verticalPaths[0] = 0;
-                    IList<IList<int>> components = InitializeComponents(verticalPaths[0], numColumns);
+                    BigInteger inflow = verticalPaths[0] = 0;
+                    IList<IList<int>> components = InitializeComponents(0, numColumns);
                     IList<short> rowLists =
                         ValidPathRowEnumerator.ValidRowList(_tableWidth, RandomEvenBitPattern(_tableWidth, _random))
                             .ToList();
@@ -111,9 +112,9 @@ namespace CrawfisSoftware.PCG
                         }
                     }
 
-                    int outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
-                    int horizontalSpans;
-                    while (!ValidateAndUpdateComponents(inflow, outflowCandidate, components, 0,
+                    BigInteger outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
+                    BigInteger horizontalSpans;
+                    while (!ValidateAndUpdateComponentsCarryOverBit(inflow, outflowCandidate, components, 0,
                                out horizontalSpans))
                     {
                         previousBlocked = false;
@@ -185,7 +186,7 @@ namespace CrawfisSoftware.PCG
                             }
                         }
                         outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
-                        while (!(ValidateAndUpdateComponents(inflow, outflowCandidate, components, currentRow,
+                        while (!(ValidateAndUpdateComponentsCarryOverBit(inflow, outflowCandidate, components, currentRow,
                                    out horizontalSpans, 1)))
                         {
                             previousBlocked = false;
@@ -262,7 +263,7 @@ namespace CrawfisSoftware.PCG
                         }
                         outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
                         
-                        while (!ValidateAndUpdateComponents(inflow, outflowCandidate, components, secondToLastRow,
+                        while (!ValidateAndUpdateComponentsCarryOverBit(inflow, outflowCandidate, components, secondToLastRow,
                                    out horizontalSpans))
                         {
                             previousBlocked = false;
@@ -400,9 +401,10 @@ namespace CrawfisSoftware.PCG
             return edges;
         }
         
-        private bool UpdateLastRowAndValidateComponent(ref int[] horizontalPaths, int inflow, 
-            int previousInflow, int rowNumber, IList<IList<int>> components, int numColumns)
+        private bool UpdateLastRowAndValidateComponent(ref BigInteger[] horizontalPaths, BigInteger inflow, 
+            BigInteger previousInflow, int rowNumber, IList<IList<int>> components, int numColumns)
         {
+            BigInteger bigOne = new BigInteger(1);
             List<int> previousInflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, previousInflow);
             IList<int> currentInflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, inflow);
             
@@ -419,14 +421,14 @@ namespace CrawfisSoftware.PCG
             
             
             IList<int> componentList = components[rowNumber];
-            int horizontal = 0;
+            BigInteger horizontal = new BigInteger(0);
             for (int i = 1; i < currentInflows.Count; i += 2)
             {
                 int start = currentInflows[i-1];
                 int end = currentInflows[i];
                 for (int j = start; j < end; j++)
                 {
-                    horizontal |= 1 << j;
+                    horizontal |= bigOne << j;
                 }
 
                 componentList[end] = componentList[start];
@@ -484,9 +486,9 @@ namespace CrawfisSoftware.PCG
             return blockedBit;
         }
 
-        private int ConcatinateMultipleBits(IList<int> bits, int width)
+        private BigInteger ConcatinateMultipleBits(IList<int> bits, int width)
         {
-            int mergedBit = bits[0];
+            BigInteger mergedBit = bits[0];
             for (int i = 1; i < bits.Count; i++)
             {
                 mergedBit = (mergedBit << width) | bits[i];

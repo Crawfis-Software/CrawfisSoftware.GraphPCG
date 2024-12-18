@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 // int pathID = 0;
 // var inFlow = new List<int>() { start };
 // var verticalPaths = new int[_height];
@@ -279,6 +278,7 @@ namespace CrawfisSoftware.PCG
             //    4) if no match still and e < c, then match b to e.
             //
             bool isValid = true;
+            BigInteger bigOne = new BigInteger(1);
             IList<int> components = componentsGrid[index];
             int width = components.Count;
             var newOutflowComponents = componentsGrid[index+1]; // new int[width];
@@ -290,12 +290,12 @@ namespace CrawfisSoftware.PCG
             int b = 0;
             BigInteger inFlowBitPattern = inFlows;
             BigInteger outFlowBitPattern = outFlows;
-            horizontalSpans = 0;
+            horizontalSpans = new BigInteger(0);
             int addedComponentNum = width; // Some number larger than all other component numbers (for now)
             // Find first outflow bit (b)
             while (b < width)
             {
-                if ((inFlowBitPattern & 1) == 1) break;
+                if ((inFlowBitPattern & bigOne) == bigOne) break;
                 inFlowBitPattern >>= 1;
                 b++;
             }
@@ -319,7 +319,7 @@ namespace CrawfisSoftware.PCG
                 }
                 bool rightEdge = true;
                 bool matched = false;
-                int mask = 1; // << (width - 1);
+                BigInteger mask = new BigInteger(1); // << (width - 1);
                 // add any extra outflow pairs as new components, if odd number of bits, match b to the last outflow bit.
                 for (int i = 0; i < spanLength; i++)
                 {
@@ -331,9 +331,9 @@ namespace CrawfisSoftware.PCG
                             e = i + spanStart;
                             newOutflowComponents[e] = componentB;
                             matched = true;
-                            int bitPattern = ((1 << (b - e)) - 1) << e;
+                            BigInteger bitPattern = ((bigOne << (b - e)) - bigOne) << e;
                             if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
-                            horizontalSpans = horizontalSpans | bitPattern;
+                            horizontalSpans |= bitPattern;
                             break;
                         }
                         //else
@@ -346,9 +346,9 @@ namespace CrawfisSoftware.PCG
                             // new loop 
                             addedComponentNum++;
                             e = i + spanStart;
-                            int bitPattern = ((1 << (e - d)) - 1) << d;
+                            BigInteger bitPattern = ((bigOne << (e - d)) - bigOne) << d;
                             if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
-                            horizontalSpans = horizontalSpans | bitPattern;
+                            horizontalSpans |= bitPattern;
                         }
                         d = i + spanStart;
                         rightEdge = !rightEdge;
@@ -358,7 +358,7 @@ namespace CrawfisSoftware.PCG
                 int c = b + 1;
                 while (c < width)
                 {
-                    if ((inFlowBitPattern & 1) == 1) break;
+                    if ((inFlowBitPattern & bigOne) == bigOne) break;
                     inFlowBitPattern >>= 1;
                     c++;
                 }
@@ -367,17 +367,17 @@ namespace CrawfisSoftware.PCG
                 // Try to match b to the next outFlow bit.
                 if (!matched)
                 {
-                    outFlowBitPattern = outFlowBitPattern >> spanLength;
+                    outFlowBitPattern >>= spanLength;
                     e = b + 1;
                     while (e < c)
                     {
-                        if ((outFlowBitPattern & 1) == 1)
+                        if ((outFlowBitPattern & bigOne) == bigOne)
                         {
                             newOutflowComponents[e] = componentB;
                             matched = true;
-                            int bitPattern = ((1 << (e - b)) - 1) << b;
+                            BigInteger bitPattern = ((bigOne << (e - b)) - bigOne) << b;
                             if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
-                            horizontalSpans = horizontalSpans | bitPattern;
+                            horizontalSpans |= bitPattern;
                             break;
                         }
                         outFlowBitPattern >>= 1;
@@ -396,9 +396,9 @@ namespace CrawfisSoftware.PCG
                         {
                             // Remap component c to b.
                             componentRemap[componentC] = componentB;
-                            int bitPattern = ((1 << (c - b)) - 1) << b;
+                            BigInteger bitPattern = ((bigOne << (c - b)) - bigOne) << b;
                             if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
-                            horizontalSpans = horizontalSpans | bitPattern;
+                            horizontalSpans |= bitPattern;
                         }
                         // Update d and c
                         d = e;
@@ -406,7 +406,7 @@ namespace CrawfisSoftware.PCG
                         c++;
                         while (c < width)
                         {
-                            if ((inFlowBitPattern & 1) == 1) break;
+                            if ((inFlowBitPattern & bigOne) == bigOne) break;
                             inFlowBitPattern >>= 1;
                             c++;
                         }
@@ -474,8 +474,9 @@ namespace CrawfisSoftware.PCG
         /// <returns></returns>
         public static BigInteger TrimToSpan(BigInteger bitPattern, int start, int end)
         {
+            BigInteger bigOne = new BigInteger(1);
             BigInteger trimmedPattern = bitPattern >> start;
-            int mask = (1 << (end - start + 1)) - 1;
+            BigInteger mask = (bigOne << (end - start + 1)) - bigOne;
             return (mask & trimmedPattern);
         }
 
@@ -568,7 +569,7 @@ namespace CrawfisSoftware.PCG
             return (b & (1 << pos)) != 0;
         }
         
-        public static bool[] GetEdges(BigInteger inflow, BigInteger outflow,BigInteger horizontalSpan, int cellNumber, int width)
+        public static bool[] GetEdges(BigInteger inflow, BigInteger outflow, BigInteger horizontalSpan, int cellNumber, int width)
         {
             bool[] edges = new bool[4];
             List<int> inflows = ValidPathRowEnumerator.InflowsFromBits(width, inflow);
