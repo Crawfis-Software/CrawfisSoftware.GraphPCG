@@ -192,31 +192,5 @@ namespace CrawfisSoftware.PCG
             return true;
         }
 
-        private bool IsBitSet(int inflow, int pos)
-        {
-            return ValidPathRowEnumerator.InflowsFromBits(_width, inflow).Contains(pos);
-        }
-
-        private int BlockBit(int bit, int pos)
-        {
-            return bit &= ~(1 << pos);
-        }
-
-        private int OpenBit(int bit, int pos)
-        {
-            return bit |= (1 << pos);
-        }
-
-        private int TotalNumberOfSetBitsBeforeAPos(int inflow, int outflow, int pos)
-        {
-            List<int> inflows = ValidPathRowEnumerator.InflowsFromBits(_width, inflow);
-            List<int> outflows = ValidPathRowEnumerator.InflowsFromBits(_width, outflow);
-            return inflows.Count(n => n < pos) + outflows.Count(n => n < pos);
-        }
-
-        private void PrintFlow(int flow, int width)
-        {
-            Console.WriteLine(Convert.ToString(flow, 2).PadLeft(width, '0'));
-        }
     }
 }

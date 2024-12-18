@@ -2,17 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-// int pathID = 0;
-// var inFlow = new List<int>() { start };
-// var verticalPaths = new int[_height];
-// var horizontalPaths = new int[_height];
-// int[][] components = new int[_height][];
-// for (int i = 0; i < _height; i++)
-//     components[i] = new int[_width];
-// components[0][start] = 1;
-// verticalPaths[0] = 1 << start; // row;
-// int endRow = 1 << end;
-// verticalPaths[_height - 1] = endRow;
+
 namespace CrawfisSoftware.PCG
 {
     /// <summary>

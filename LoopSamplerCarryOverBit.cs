@@ -58,7 +58,7 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         /// <param name="start">The column index of the starting cell on the first row (row 0).</param>
         /// <param name="end">The column index of the ending cell on the last row (row height-1)</param>
-
+        /// <param name="numColumns">Numeber of columns, each column has a width of the given table</param>
         /// <returns>A value tuple of a list of vertical bits and a list of horizontal bits.</returns>
         public (IList<BigInteger> vertical, IList<BigInteger> horizontal)
             Sample(int numColumns)
