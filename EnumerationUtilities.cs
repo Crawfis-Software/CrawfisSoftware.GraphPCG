@@ -568,34 +568,34 @@ namespace CrawfisSoftware.PCG
             return (b & (1 << pos)) != 0;
         }
         
-        private static int[] GetEdges(BigInteger inflow, BigInteger outflow,BigInteger horizontalSpan, int cellNumber, int width)
+        public static bool[] GetEdges(BigInteger inflow, BigInteger outflow,BigInteger horizontalSpan, int cellNumber, int width)
         {
-            int[] edges = new int[4];
+            bool[] edges = new bool[4];
             List<int> inflows = ValidPathRowEnumerator.InflowsFromBits(width, inflow);
             List<int> outflows = ValidPathRowEnumerator.InflowsFromBits(width, outflow);
             List<int> horizontalSpans = ValidPathRowEnumerator.InflowsFromBits(width, horizontalSpan);
 
             if (cellNumber == 0)
             {
-                edges[0] = 0;
+                edges[0] = false;
             }
             else
             {
-                edges[0] = horizontalSpans.Contains(cellNumber - 1) ? 1 : 0; 
+                edges[0] = horizontalSpans.Contains(cellNumber - 1); 
             }
-            edges[1] = outflows.Contains(cellNumber) ? 1 : 0;
-            edges[2] = horizontalSpans.Contains(cellNumber) ? 1 : 0; 
-            edges[3] = inflows.Contains(cellNumber) ? 1 : 0;
+            edges[1] = outflows.Contains(cellNumber);
+            edges[2] = horizontalSpans.Contains(cellNumber); 
+            edges[3] = inflows.Contains(cellNumber);
             
             return edges;
         }
 
-        private static bool ValidateEdges(BigInteger inflow, BigInteger outflow, BigInteger horizontalSpan, int width)
+        public static bool ValidateEdges(BigInteger inflow, BigInteger outflow, BigInteger horizontalSpan, int width)
         {
             for (int i = 0; i < width; i++)
             {
-                int[] edges = GetEdges(inflow, outflow, horizontalSpan, i, width);
-                int count = edges.Count(n => n == 1);
+                bool[] edges = GetEdges(inflow, outflow, horizontalSpan, i, width);
+                int count = edges.Count(n => n);
                 if (count == 1 || count == 3 || count == 4)
                     return false;
             }
