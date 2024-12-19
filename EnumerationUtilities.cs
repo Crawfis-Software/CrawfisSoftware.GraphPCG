@@ -38,7 +38,7 @@ namespace CrawfisSoftware.PCG
         /// merging and creation</param>
         /// <param name="maxNestedComponents">A constraint to check on the maximum allowed nested loops for this row.</param>
         /// <returns>True is the outFlows row is a valid row based on the inFlows row.</returns>
-        public static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, 
+        internal static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, 
             int index, out int horizontalSpans, int maxNestedComponents = System.Int16.MaxValue)
         {
             // Given:
@@ -252,7 +252,7 @@ namespace CrawfisSoftware.PCG
         /// merging and creation</param>
         /// <param name="maxNestedComponents">A constraint to check on the maximum allowed nested loops for this row.</param>
         /// <returns>True is the outFlows row is a valid row based on the inFlows row.</returns>
-        public static bool ValidateAndUpdateComponentsCarryOverBit(BigInteger inFlows, BigInteger outFlows, IList<IList<int>> componentsGrid, 
+        internal static bool ValidateAndUpdateComponentsCarryOverBit(BigInteger inFlows, BigInteger outFlows, IList<IList<int>> componentsGrid, 
             int index, out BigInteger horizontalSpans, int maxNestedComponents = System.Int16.MaxValue)
         {
             // Given:
