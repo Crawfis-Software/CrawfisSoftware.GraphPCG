@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
@@ -287,10 +288,10 @@ namespace CrawfisSoftware.PCG
         /// <param name="width">The width of the row</param>
         /// <param name="row">The inflow bit pattern</param>
         /// <returns></returns>
-        public static List<int> InflowsFromBits(int width, int row)
+        public static List<int> InflowsFromBits(int width, BigInteger row)
         {
             var inFlows = new List<int>();
-            int mask = 1;
+            BigInteger mask = new BigInteger(1);
             for (int i = 0; i < width; i++)
             {
                 //mask = 1 << (width - i - 1);

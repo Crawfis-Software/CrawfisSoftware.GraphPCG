@@ -13,9 +13,10 @@ namespace CrawfisSoftware.PCG
     /// <summary>
     /// Class to sample a path from top to bottom.
     /// </summary>
-    public class PathSamplerBottomToTop
+    public class LoopSampler
     {
         private const int MaxDefaultAttempts = 10000;
+        private readonly int _tableWidth;
         private readonly int _width;
         private readonly int _height;
         private readonly Random _random;
@@ -34,11 +35,12 @@ namespace CrawfisSoftware.PCG
         /// the current candidate row value (vertical bits), all verticalBits so far, all horizontal bits so far, all components so far</param>
         /// <param name="horizontalCandidateOracle">Function that returns true or false whether this row is desired. Parameters are: the pathID, the row number,
         /// the current candidate value (horizontal bits), all verticalBits so far, all horizontal bits so far, all components so far.</param>
-        public PathSamplerBottomToTop(int width, int height, Random random,
+        public LoopSampler(int width, int height, Random random,
             Func<int, bool> globalConstraintsOracle = null, Validator verticalCandidateOracle = null,
             Validator horizontalCandidateOracle = null)
         {
             this._width = width;
+            this._tableWidth = width;
             this._height = height;
             this._random = random;
             this._verticalCandidateOracle = verticalCandidateOracle;
@@ -46,11 +48,11 @@ namespace CrawfisSoftware.PCG
 
             if (globalConstraintsOracle == null)
             {
-                ValidPathRowEnumerator.BuildOddTables(_width);
+                ValidPathRowEnumerator.BuildEvenTables(_tableWidth);
             }
             else
             {
-                ValidPathRowEnumerator.BuildOddTablesWithConstraints(_width, globalConstraintsOracle);
+                ValidPathRowEnumerator.BuildEvenTablesWithConstraints(_tableWidth, globalConstraintsOracle);
             }
             
         }
@@ -63,7 +65,7 @@ namespace CrawfisSoftware.PCG
 
         /// <returns>A value tuple of a list of vertical bits and a list of horizontal bits.</returns>
         public (IList<int> vertical, IList<int> horizontal)
-            Sample(int start, int end)
+            Sample()
         {
             const int MAX_ATTEMPTS = 1000000;
             int currentAttempt = 0;
@@ -75,17 +77,14 @@ namespace CrawfisSoftware.PCG
             {
                 try
                 {
-                    ValidPathRowEnumerator.PointToOddTable();
+                    ValidPathRowEnumerator.PointToEvenTable();
             
                     #region FirstRow
             
-                    int inflow = verticalPaths[0] = 1 << start;
-                    int[][] components = new int[_height + 1][];
-                    for (int i = 0; i < _height + 1; i++)
-                        components[i] = new int[_width];
-                    components[0][start] = 1;
+                    int inflow = verticalPaths[0] = 0;
+                    IList<IList<int>> components = InitializeComponents(verticalPaths[0], 1);
                     IList<short> rowLists =
-                        ValidPathRowEnumerator.ValidRowList(_width, inflow )
+                        ValidPathRowEnumerator.ValidRowList(_tableWidth, RandomEvenBitPattern(_tableWidth, _random))
                             .ToList();
                     int outflowCandidate = rowLists[_random.Next(0, rowLists.Count)];
                     int horizontalSpans;
@@ -106,7 +105,7 @@ namespace CrawfisSoftware.PCG
                     {
                         inflow = verticalPaths[currentRow];
                         rowLists =
-                            ValidPathRowEnumerator.ValidRowList(_width, inflow)
+                            ValidPathRowEnumerator.ValidRowList(_tableWidth, inflow)
                                 .ToList();
                         outflowCandidate = rowLists[_random.Next(0, rowLists.Count)];
                         while (!(ValidateAndUpdateComponents(inflow, outflowCandidate, components, currentRow,
@@ -130,7 +129,7 @@ namespace CrawfisSoftware.PCG
                         int secondToLastRow = _height - 2;
                         inflow = verticalPaths[secondToLastRow];
                         rowLists =
-                            ValidPathRowEnumerator.ValidRowList(_width, inflow)
+                            ValidPathRowEnumerator.ValidRowList(_tableWidth, inflow)
                                 .ToList();
                         outflowCandidate = rowLists[_random.Next(0, rowLists.Count)];
                         
@@ -145,12 +144,10 @@ namespace CrawfisSoftware.PCG
                     
                         int lastRow = _height - 1;
                         inflow = verticalPaths[lastRow];
-                        int lastOutflow = 1 << end;
-                        if (ValidateAndUpdateComponents(inflow, lastOutflow, components, lastRow,
-                                   out horizontalSpans))
+                        if (UpdateLastRowAndValidateComponent(ref horizontalPaths, inflow,
+                                verticalPaths[secondToLastRow], lastRow, components, 1))
                         {
                             lastRowFixed = true;
-                            horizontalPaths[lastRow] = horizontalSpans;
                         }
                     
                         lastRowAttemp++;
@@ -177,6 +174,74 @@ namespace CrawfisSoftware.PCG
             return  (verticalPaths, horizontalPaths);
             
 
+        }
+
+        private IList<IList<int>> InitializeComponents(int firstRow, int numColumns)
+        {
+            int[][] components = new int[_height][];
+            for (int i = 0; i < _height; i++)
+                components[i] = new int[_tableWidth*numColumns];
+            IList<int> inflowList = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, firstRow);
+            int counter = 0;
+            int currentComponentNumber = 1;
+            for (int i = 0; i < components[0].Count(); i++)
+            {
+                if (inflowList.Contains(i))
+                {
+                    components[0][i] = currentComponentNumber;
+                    counter++;
+                    if (counter % 2 == 0)
+                    {
+                        currentComponentNumber++;
+                    }
+                }
+            }
+
+            return components;
+        }
+        
+        private bool UpdateLastRowAndValidateComponent(ref int[] horizontalPaths, int inflow, 
+            int previousInflow, int rowNumber, IList<IList<int>> components, int numColumns)
+        {
+            List<int> previousInflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, previousInflow);
+            IList<int> currentInflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, inflow);
+            
+            int previousMin = previousInflows.Min();
+            int previousMax = previousInflows.Max();
+            
+            int currentMin = currentInflows.Min();
+            int currentMax = currentInflows.Max();
+
+            if (previousMin < currentMin || previousMax > currentMax)
+            {
+                return false;
+            }
+            
+            
+            IList<int> componentList = components[rowNumber];
+            int horizontal = 0;
+            for (int i = 1; i < currentInflows.Count; i += 2)
+            {
+                int start = currentInflows[i-1];
+                int end = currentInflows[i];
+                for (int j = start; j < end; j++)
+                {
+                    horizontal |= 1 << j;
+                }
+
+                componentList[end] = componentList[start];
+            }
+            if (NumberOfDistinctValues(componentList) != 2)
+            {
+                return false;
+            }
+            horizontalPaths[rowNumber] = horizontal;
+            return true;
+        }
+
+        private void PrintFlow(int flow, int width)
+        {
+            Console.WriteLine(Convert.ToString(flow, 2).PadLeft(width, '0'));
         }
     }
 }

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.Numerics;
 
 namespace CrawfisSoftware.PCG
 {
@@ -38,7 +38,7 @@ namespace CrawfisSoftware.PCG
         /// merging and creation</param>
         /// <param name="maxNestedComponents">A constraint to check on the maximum allowed nested loops for this row.</param>
         /// <returns>True is the outFlows row is a valid row based on the inFlows row.</returns>
-        public static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, 
+        internal static bool ValidateAndUpdateComponents(int inFlows, int outFlows, IList<IList<int>> componentsGrid, 
             int index, out int horizontalSpans, int maxNestedComponents = System.Int16.MaxValue)
         {
             // Given:
@@ -80,7 +80,7 @@ namespace CrawfisSoftware.PCG
             while ((spanStart < width) && (spanLength > 0) )
             {
                 int e = d+1;
-                int span = 0;
+                BigInteger span = 0;
                 int componentB = (b < width) ? components[b] : 0;
                 //if (componentB == 0) throw new InvalidOperationException("ComponentB is zero!");
                 int tempComponentNum;
@@ -162,7 +162,8 @@ namespace CrawfisSoftware.PCG
                     if (!matched && (c < width))
                     {
                         int componentC = components[c];
-                        if (componentC == 0) throw new InvalidOperationException("ComponentC is zero!");
+                        //if (componentC == 0) throw new InvalidOperationException("ComponentC is zero!");
+                        if (componentC == 0) isValid = false;
                         if (componentRemap.TryGetValue(componentC, out tempComponentNum)) componentC = tempComponentNum;
                         if (componentB == componentC) 
                             isValid = false;
@@ -231,6 +232,226 @@ namespace CrawfisSoftware.PCG
                     newOutflowComponents[i] = componentRemap[componentNum];
                 }
             }
+
+            if (!ValidateEdges(inFlows, outFlows, horizontalSpans, width))
+            {
+                isValid = false;
+            }
+            return isValid;
+        }
+        
+        /// <summary>
+        /// Checks two rows to see if they are valid. If so, components from the first row are matched (or merged) and
+        /// new component numbers are created (as well as new loops). 
+        /// </summary>
+        /// <param name="inFlows">Incoming row of vertical edges</param>
+        /// <param name="outFlows">Outgoing row of vertical edges</param>
+        /// <param name="componentsGrid">The verticalGrid of component numbers for each inflow edge on each row</param>
+        /// <param name="index">The current row index</param>
+        /// <param name="horizontalSpans">A bit vector of new horizontal edges created by the component matching,
+        /// merging and creation</param>
+        /// <param name="maxNestedComponents">A constraint to check on the maximum allowed nested loops for this row.</param>
+        /// <returns>True is the outFlows row is a valid row based on the inFlows row.</returns>
+        internal static bool ValidateAndUpdateComponentsCarryOverBit(BigInteger inFlows, BigInteger outFlows, IList<IList<int>> componentsGrid, 
+            int index, out BigInteger horizontalSpans, int maxNestedComponents = System.Int16.MaxValue)
+        {
+            // Given:
+            //    a = last known inflow and a matching outflow of d
+            //    b = next inflow that we are trying to match or merge.
+            //    c = next inflow after b, which marks a boundary for our match.
+            //    d = last known outflow, which is matched to inflow a.
+            //    e = the next outflow we are trying to match b to.
+            // Rules
+            //    1) If no outflows from d until c-1 (e >= c), then the inflows b and c were merged (an outflow at c would thus be an error).
+            //    2) if the number of outflow bits from max(a,d)+1 to b is odd, then b matches with last outflow. All others are new components (in pairs).
+            //    3) if the number of outflow bits from max(a,d)+1 to b is even, then these are all new components (in pairs). Note outflow at b must be zero.
+            //    4) if no match still and e < c, then match b to e.
+            //
+            bool isValid = true;
+            BigInteger bigOne = new BigInteger(1);
+            IList<int> components = componentsGrid[index];
+            int width = components.Count;
+            var newOutflowComponents = componentsGrid[index+1]; // new int[width];
+            for (int i = 0; i < width; i++)
+                newOutflowComponents[i] = 0;
+            var componentRemap = new Dictionary<int, int>();
+            int a = -1;
+            int d = -1;
+            int b = 0;
+            BigInteger inFlowBitPattern = inFlows;
+            BigInteger outFlowBitPattern = outFlows;
+            horizontalSpans = new BigInteger(0);
+            int addedComponentNum = width; // Some number larger than all other component numbers (for now)
+            // Find first outflow bit (b)
+            while (b < width)
+            {
+                if ((inFlowBitPattern & bigOne) == bigOne) break;
+                inFlowBitPattern >>= 1;
+                b++;
+            }
+            inFlowBitPattern >>= 1;
+            int spanStart = a + 1;
+            int spanLength = b - spanStart + 1;
+            while ((spanStart < width) && (spanLength > 0) )
+            {
+                int e = d+1;
+                BigInteger span = 0;
+                int componentB = (b < width) ? components[b] : 0;
+                //if (componentB == 0) throw new InvalidOperationException("ComponentB is zero!");
+                int tempComponentNum;
+                if (componentRemap.TryGetValue(componentB, out tempComponentNum)) componentB = tempComponentNum;
+                int numOfOutflowsInSpan = 0;
+                if (spanLength > 0)
+                {
+                    span = TrimToSpan(outFlows, spanStart, b);
+                    numOfOutflowsInSpan = CountSetBits(span);
+                    outFlowBitPattern = outFlows >> spanStart;
+                }
+                bool rightEdge = true;
+                bool matched = false;
+                BigInteger mask = new BigInteger(1); // << (width - 1);
+                // add any extra outflow pairs as new components, if odd number of bits, match b to the last outflow bit.
+                for (int i = 0; i < spanLength; i++)
+                {
+                    if (numOfOutflowsInSpan == 0) break;
+                    if ((span & mask) == mask)
+                    {
+                        if (rightEdge && numOfOutflowsInSpan == 1)
+                        {
+                            e = i + spanStart;
+                            newOutflowComponents[e] = componentB;
+                            matched = true;
+                            BigInteger bitPattern = ((bigOne << (b - e)) - bigOne) << e;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans |= bitPattern;
+                            break;
+                        }
+                        //else
+                        {
+                            numOfOutflowsInSpan -= 1;
+                            newOutflowComponents[i + spanStart] = addedComponentNum;
+                        }
+                        if (!rightEdge)
+                        {
+                            // new loop 
+                            addedComponentNum++;
+                            e = i + spanStart;
+                            BigInteger bitPattern = ((bigOne << (e - d)) - bigOne) << d;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans |= bitPattern;
+                        }
+                        d = i + spanStart;
+                        rightEdge = !rightEdge;
+                    }
+                    mask = mask << 1;
+                }
+                int c = b + 1;
+                while (c < width)
+                {
+                    if ((inFlowBitPattern & bigOne) == bigOne) break;
+                    inFlowBitPattern >>= 1;
+                    c++;
+                }
+                inFlowBitPattern >>= 1;
+                // b's Inflow goes to the Left
+                // Try to match b to the next outFlow bit.
+                if (!matched)
+                {
+                    outFlowBitPattern >>= spanLength;
+                    e = b + 1;
+                    while (e < c)
+                    {
+                        if ((outFlowBitPattern & bigOne) == bigOne)
+                        {
+                            newOutflowComponents[e] = componentB;
+                            matched = true;
+                            BigInteger bitPattern = ((bigOne << (e - b)) - bigOne) << b;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans |= bitPattern;
+                            break;
+                        }
+                        outFlowBitPattern >>= 1;
+                        e++;
+                    }
+                    // No match, b and c form a closed loop. Check if valid
+                    if (!matched && (c < width))
+                    {
+                        int componentC = components[c];
+                        //if (componentC == 0) throw new InvalidOperationException("ComponentC is zero!");
+                        if (componentC == 0) isValid = false;
+                        if (componentRemap.TryGetValue(componentC, out tempComponentNum)) componentC = tempComponentNum;
+                        if (componentB == componentC) 
+                            isValid = false;
+                        else
+                        {
+                            // Remap component c to b.
+                            componentRemap[componentC] = componentB;
+                            BigInteger bitPattern = ((bigOne << (c - b)) - bigOne) << b;
+                            if (bitPattern < 0) throw new InvalidOperationException("Horizontal bit pattern is negative!");
+                            horizontalSpans |= bitPattern;
+                        }
+                        // Update d and c
+                        d = e;
+                        b = c;
+                        c++;
+                        while (c < width)
+                        {
+                            if ((inFlowBitPattern & bigOne) == bigOne) break;
+                            inFlowBitPattern >>= 1;
+                            c++;
+                        }
+                        inFlowBitPattern >>= 1;
+                    }
+                }
+                a = b;
+                if(matched)
+                    d = e;
+                b = c;
+                spanStart = (a > d) ? a + 1 : d+1;
+                spanLength = b - spanStart + 1;
+            }
+
+            // Renumber components left to right
+            for (int i = 0; i < width; i++)
+            {
+                int componentNum = newOutflowComponents[i];
+                if (componentNum != 0)
+                {
+                    if (componentRemap.ContainsKey(componentNum))
+                    {
+                        newOutflowComponents[i] = componentRemap[componentNum];
+                    }
+                }
+            }
+            int lastMatched = 0;
+            componentRemap.Clear();
+            int newComponentNum = 1;
+            for (int i = 0; i < width; i++)
+            {
+                int componentNum = newOutflowComponents[i];
+                if (componentNum != 0)
+                {
+                    if (!componentRemap.ContainsKey(componentNum))
+                    {
+                        componentRemap[componentNum] = newComponentNum++;
+                    }
+                    else
+                    {
+                        if (componentRemap[componentNum] - lastMatched > maxNestedComponents)
+                        {
+                            isValid = false;
+                            break;
+                        }
+                        lastMatched = componentRemap[componentNum];
+                    }
+                    newOutflowComponents[i] = componentRemap[componentNum];
+                }
+            }
+
+            if (!ValidateEdges(inFlows, outFlows, horizontalSpans, width))
+            {
+                isValid = false;
+            }
             return isValid;
         }
         
@@ -241,10 +462,11 @@ namespace CrawfisSoftware.PCG
         /// <param name="start"></param>
         /// <param name="end"></param>
         /// <returns></returns>
-        public static int TrimToSpan(int bitPattern, int start, int end)
+        public static BigInteger TrimToSpan(BigInteger bitPattern, int start, int end)
         {
-            int trimmedPattern = bitPattern >> start;
-            int mask = (1 << (end - start + 1)) - 1;
+            BigInteger bigOne = new BigInteger(1);
+            BigInteger trimmedPattern = bitPattern >> start;
+            BigInteger mask = (bigOne << (end - start + 1)) - bigOne;
             return (mask & trimmedPattern);
         }
 
@@ -253,7 +475,7 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         /// <param name="n">Base 10 representation of bits</param>
         /// <returns></returns>
-        public static int CountSetBits(int n)
+        public static int CountSetBits(BigInteger n)
         {
             int count = 0;
             while (n > 0)
@@ -297,7 +519,7 @@ namespace CrawfisSoftware.PCG
             do
             {
                 bitPattern = (random.Next(max) | setBit) + 1;
-            } while (CountSetBits(bitPattern) % 2 != 0);
+            } while (CountSetBits(bitPattern) % 2 != 0 || bitPattern == 0);
 
             return bitPattern;
         }
@@ -335,6 +557,40 @@ namespace CrawfisSoftware.PCG
         public static bool IsBitSet(int b, int pos)
         {
             return (b & (1 << pos)) != 0;
+        }
+        
+        public static bool[] GetEdges(BigInteger inflow, BigInteger outflow, BigInteger horizontalSpan, int cellNumber, int width)
+        {
+            bool[] edges = new bool[4];
+            List<int> inflows = ValidPathRowEnumerator.InflowsFromBits(width, inflow);
+            List<int> outflows = ValidPathRowEnumerator.InflowsFromBits(width, outflow);
+            List<int> horizontalSpans = ValidPathRowEnumerator.InflowsFromBits(width, horizontalSpan);
+
+            if (cellNumber == 0)
+            {
+                edges[0] = false;
+            }
+            else
+            {
+                edges[0] = horizontalSpans.Contains(cellNumber - 1); 
+            }
+            edges[1] = outflows.Contains(cellNumber);
+            edges[2] = horizontalSpans.Contains(cellNumber); 
+            edges[3] = inflows.Contains(cellNumber);
+            
+            return edges;
+        }
+
+        public static bool ValidateEdges(BigInteger inflow, BigInteger outflow, BigInteger horizontalSpan, int width)
+        {
+            for (int i = 0; i < width; i++)
+            {
+                bool[] edges = GetEdges(inflow, outflow, horizontalSpan, i, width);
+                int count = edges.Count(n => n);
+                if (count == 1 || count == 3 || count == 4)
+                    return false;
+            }
+            return true;
         }
 
 
