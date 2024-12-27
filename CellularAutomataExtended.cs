@@ -1,10 +1,11 @@
 ﻿using CrawfisSoftware.Collections.Graph;
+
 using System;
 
 namespace CrawfisSoftware.PCG
 {
     /// <summary>
-    /// CellularAutomata that allows a Kernel to be passed in. This allows for the 4-neighbors, weights, etc. where the original algorithm is a box filter / counter.
+    /// CellularAutomata that allows a Kernel to be passed in. This allows for the N-neighbors, weights, etc. where the original algorithm is a box filter / counter.
     /// </summary>
     public class CellularAutomataExtended : CellularAutomata
     {
@@ -28,7 +29,7 @@ namespace CrawfisSoftware.PCG
         }
 
         /// <summary>
-        /// Contructor.
+        /// Constructor.
         /// </summary>
         /// <param name="width">The number of columns for the new occupancy grid.</param>
         /// <param name="height">The number of rows for the new occupancy grid.</param>
@@ -40,7 +41,7 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// Iterate over the grid the specified number of times, computing the convolution of the kernel with the occupancy grid and calling the ComputeCell function.
         /// </summary>
-        /// <param name="numberOfIterations">The nunmber of times to apply the decision process for each cell.</param>
+        /// <param name="numberOfIterations">The number of times to apply the decision process for each cell.</param>
         public void IterateFiltered(int numberOfIterations = 1)
         {
             for (int iteration = 0; iteration < numberOfIterations; iteration++)
