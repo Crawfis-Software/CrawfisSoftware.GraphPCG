@@ -258,11 +258,6 @@ namespace CrawfisSoftware.PCG
         }
 
         /// <summary>
-        /// Using existing path distances, find the furthest paths and carve them.
-        /// </summary>
-        /// <param name="numberOfPathsToCarve">THe number of passageways to create.</param>
-
-        /// <summary>
         /// Actually create the rooms in the underlying grid maze.
         /// </summary>
         public void CarveAllRooms()
@@ -275,6 +270,11 @@ namespace CrawfisSoftware.PCG
                 CarveRoom(lowerLeftIndex, upperRightIndex);
             }
         }
+        /// <summary>
+        /// Using existing path distances, find the furthest paths and carve them.
+        /// </summary>
+        /// <param name="numberOfPathsToCarve">THe number of passageways to create.</param>
+
         public void CarveExtraPassagesFurthestAway(int numberOfPathsToCarve = 1)
         {
             int pathsToCarve = numberOfPathsToCarve;
