@@ -11,7 +11,7 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     public class LoopSamplerCarryOverBit
     {
-        private const int MaxDefaultAttempts = 10000;
+        private const int MaxDefaultAttempts = 1000;
         private readonly int _tableWidth;
         private readonly int _width;
         private readonly int _height;
@@ -63,6 +63,7 @@ namespace CrawfisSoftware.PCG
         public (IList<BigInteger> vertical, IList<BigInteger> horizontal)
             Sample(int numColumns)
         {
+            ISet<BigInteger> seenCandidates = new HashSet<BigInteger>();
             const int MAX_ATTEMPTS = 1000000;
             int currentAttempt = 0;
 
@@ -124,12 +125,14 @@ namespace CrawfisSoftware.PCG
                             outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
                             if (previousBlocked)
                             {
-                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
                             }
 
                             if (_random.Next(2) == 0 && i != numColumns - 1)
                             {
-                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
                                 previousBlocked = true;
                             }
                             else
@@ -172,12 +175,14 @@ namespace CrawfisSoftware.PCG
                             outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
                             if (previousBlocked)
                             {
-                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
                             }
-                    
+
                             if (_random.Next(2) == 0 && i != numColumns - 1)
                             {
-                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
                                 previousBlocked = true;
                             }
                             else
@@ -186,9 +191,12 @@ namespace CrawfisSoftware.PCG
                             }
                         }
                         outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
+                        seenCandidates.Clear();
+                        int midfailed = 0;
                         while (!(ValidateAndUpdateComponentsCarryOverBit(inflow, outflowCandidate, components, currentRow,
-                                   out horizontalSpans, 1)))
+                                   out horizontalSpans, 1)) && !seenCandidates.Contains(outflowCandidate))
                         {
+                            midfailed++;
                             previousBlocked = false;
                             for (int i = 0; i < numColumns; i++)
                             {
@@ -196,12 +204,14 @@ namespace CrawfisSoftware.PCG
                                 outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
                                 if (previousBlocked)
                                 {
-                                    outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                    //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                    outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
                                 }
-                    
+
                                 if (_random.Next(2) == 0 && i != numColumns - 1)
                                 {
-                                    outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                    //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                    outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
                                     previousBlocked = true;
                                 }
                                 else
@@ -211,6 +221,7 @@ namespace CrawfisSoftware.PCG
                             }
                             outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
                         }
+                        Console.WriteLine($"Row {currentRow} failed: {midfailed} times.");
                         
                         verticalPaths[currentRow + 1] = outflowCandidate;
                         for (int i = 0; i < numColumns; i++)
@@ -231,62 +242,74 @@ namespace CrawfisSoftware.PCG
                     {
                         int secondToLastRow = _height - 2;
                         inflow = verticalPaths[secondToLastRow];
-                        int[] middleInflows = new int[numColumns];
-                        for (int i = 0; i < numColumns; i++)
-                        {
-                            middleInflows[i] = verticals[secondToLastRow][i];
-                        }
-                    
-                        outflowCandidatesOriginal = new int[numColumns];
-                        outflowCandidatesModified = new int[numColumns];
+                        IList<int> currentInflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, inflow);
+                        int currentMin = currentInflows.Min();
+                        int currentMax = currentInflows.Max();
                         
-                        previousBlocked = false;
-                        for (int i = 0; i < numColumns; i++)
-                        {
-                            outflowCandidatesOriginal[i] = ValidPathRowEnumerator.ValidRowList
-                                (_tableWidth, middleInflows[i]).OrderBy(x => _random.Next()).First();
-                            outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
-                            if (previousBlocked)
-                            {
-                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
-                            }
-                    
-                            if (_random.Next(2) == 0 && i != numColumns - 1)
-                            {
-                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
-                                previousBlocked = true;
-                            }
-                            else
-                            {
-                                previousBlocked = false;
-                            }
-                        }
-                        outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
+                        outflowCandidate = BigInteger.Zero;
+                        outflowCandidate = OpenBit(outflowCandidate, currentMin);
+                        outflowCandidate = OpenBit(outflowCandidate, currentMax);
+                        // int[] middleInflows = new int[numColumns];
+                        // for (int i = 0; i < numColumns; i++)
+                        // {
+                        //     middleInflows[i] = verticals[secondToLastRow][i];
+                        // }
+                        //
+                        // outflowCandidatesOriginal = new int[numColumns];
+                        // outflowCandidatesModified = new int[numColumns];
+                        //
+                        // previousBlocked = false;
+                        // for (int i = 0; i < numColumns; i++)
+                        // {
+                        //     outflowCandidatesOriginal[i] = ValidPathRowEnumerator.ValidRowList
+                        //         (_tableWidth, middleInflows[i]).OrderBy(x => _random.Next()).First();
+                        //     outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
+                        //     if (previousBlocked)
+                        //     {
+                        //         outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                        //     }
+                        //
+                        //     if (_random.Next(2) == 0 && i != numColumns - 1)
+                        //     {
+                        //         outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                        //         previousBlocked = true;
+                        //     }
+                        //     else
+                        //     {
+                        //         previousBlocked = false;
+                        //     }
+                        // }
+                        // outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
+                        seenCandidates.Clear();
                         
                         while (!ValidateAndUpdateComponentsCarryOverBit(inflow, outflowCandidate, components, secondToLastRow,
-                                   out horizontalSpans))
+                                   out horizontalSpans) && !seenCandidates.Contains(outflowCandidate))
                         {
-                            previousBlocked = false;
-                            for (int i = 0; i < numColumns; i++)
-                            {
-                                outflowCandidatesOriginal[i] = rowLists[_random.Next(rowLists.Count - 1)];
-                                outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
-                                if (previousBlocked)
-                                {
-                                    outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
-                                }
-                    
-                                if (_random.Next(2) == 0 && i != numColumns - 1)
-                                {
-                                    outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
-                                    previousBlocked = true;
-                                }
-                                else
-                                {
-                                    previousBlocked = false;
-                                }
-                            }
-                            outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
+                            seenCandidates.Add(outflowCandidate);
+                            outflowCandidate = BigInteger.Zero;
+                            outflowCandidate = OpenBit(outflowCandidate, currentMin);
+                            outflowCandidate = OpenBit(outflowCandidate, currentMax);
+                            // previousBlocked = false;
+                            // for (int i = 0; i < numColumns; i++)
+                            // {
+                            //     outflowCandidatesOriginal[i] = rowLists[_random.Next(rowLists.Count - 1)];
+                            //     outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
+                            //     if (previousBlocked)
+                            //     {
+                            //         outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                            //     }
+                            //
+                            //     if (_random.Next(2) == 0 && i != numColumns - 1)
+                            //     {
+                            //         outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                            //         previousBlocked = true;
+                            //     }
+                            //     else
+                            //     {
+                            //         previousBlocked = false;
+                            //     }
+                            // }
+                            // outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
                         }
                     
                         verticalPaths[secondToLastRow + 1] = outflowCandidate;
@@ -298,10 +321,11 @@ namespace CrawfisSoftware.PCG
                     
                         int lastRow = _height - 1;
                         inflow = verticalPaths[lastRow];
-                        if (UpdateLastRowAndValidateComponent(ref horizontalPaths, inflow,
+                        if (UpdateLastRowAndValidateComponent(ref horizontalPaths, ref inflow,
                                 verticalPaths[secondToLastRow], lastRow, components, numColumns))
                         {
                             lastRowFixed = true;
+                            verticalPaths[lastRow] = inflow;
                         }
                     
                         lastRowAttemp++;
@@ -311,6 +335,7 @@ namespace CrawfisSoftware.PCG
                         }
                     
                     }
+                    Console.WriteLine($"Last two row attempts: {lastRowAttemp} times.");
                     
                     #endregion
             
@@ -401,9 +426,10 @@ namespace CrawfisSoftware.PCG
             return edges;
         }
         
-        private bool UpdateLastRowAndValidateComponent(ref BigInteger[] horizontalPaths, BigInteger inflow, 
+        private bool UpdateLastRowAndValidateComponent(ref BigInteger[] horizontalPaths, ref BigInteger inflow, 
             BigInteger previousInflow, int rowNumber, IList<IList<int>> components, int numColumns)
         {
+            IList<int> componentList = components[rowNumber];
             BigInteger bigOne = new BigInteger(1);
             List<int> previousInflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, previousInflow);
             IList<int> currentInflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth*numColumns, inflow);
@@ -419,8 +445,6 @@ namespace CrawfisSoftware.PCG
                 return false;
             }
             
-            
-            IList<int> componentList = components[rowNumber];
             BigInteger horizontal = new BigInteger(0);
             for (int i = 1; i < currentInflows.Count; i += 2)
             {
@@ -446,11 +470,23 @@ namespace CrawfisSoftware.PCG
             return ValidPathRowEnumerator.InflowsFromBits(_tableWidth, inflow).Contains(pos);
         }
 
+        private BigInteger BlockBit(BigInteger bit, int pos)
+        {
+            BigInteger one = new BigInteger(1);
+            return bit &= ~(one << pos);
+        }
+        
         private int BlockBit(int bit, int pos)
         {
             return bit &= ~(1 << pos);
         }
 
+        private BigInteger OpenBit(BigInteger bit, int pos)
+        {
+            BigInteger one = new BigInteger(1);
+            return bit |= (one << pos);
+        }
+        
         private int OpenBit(int bit, int pos)
         {
             return bit |= (1 << pos);
