@@ -221,7 +221,7 @@ namespace CrawfisSoftware.PCG
                             }
                             outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
                         }
-                        Console.WriteLine($"Row {currentRow} failed: {midfailed} times.");
+                        //Console.WriteLine($"Row {currentRow} failed: {midfailed} times.");
                         
                         verticalPaths[currentRow + 1] = outflowCandidate;
                         for (int i = 0; i < numColumns; i++)
@@ -335,7 +335,7 @@ namespace CrawfisSoftware.PCG
                         }
                     
                     }
-                    Console.WriteLine($"Last two row attempts: {lastRowAttemp} times.");
+                    //Console.WriteLine($"Last two row attempts: {lastRowAttemp} times.");
                     
                     #endregion
             
