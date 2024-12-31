@@ -125,14 +125,14 @@ namespace CrawfisSoftware.PCG
                             outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
                             if (previousBlocked)
                             {
-                                //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
-                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
                             }
 
                             if (_random.Next(2) == 0 && i != numColumns - 1)
                             {
-                                //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
-                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
                                 previousBlocked = true;
                             }
                             else
@@ -175,14 +175,14 @@ namespace CrawfisSoftware.PCG
                             outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
                             if (previousBlocked)
                             {
-                                //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
-                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
                             }
 
                             if (_random.Next(2) == 0 && i != numColumns - 1)
                             {
-                                //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
-                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
                                 previousBlocked = true;
                             }
                             else
@@ -204,14 +204,14 @@ namespace CrawfisSoftware.PCG
                                 outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
                                 if (previousBlocked)
                                 {
-                                    //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
-                                    outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                    outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                    //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
                                 }
 
                                 if (_random.Next(2) == 0 && i != numColumns - 1)
                                 {
-                                    //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
-                                    outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                    outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                    //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
                                     previousBlocked = true;
                                 }
                                 else
