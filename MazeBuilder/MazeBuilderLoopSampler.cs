@@ -12,6 +12,7 @@ namespace CrawfisSoftware.PCG.MazeBuilder
         public MazeBuilderLoopSampler(int width, int height, GetGridLabel<N> nodeAccessor = null, GetEdgeLabel<E> edgeAccessor = null) : base(width, height, nodeAccessor, edgeAccessor)
         {
             (int tableWidth, int columnWidth) = DetermineOptimalTableWidth(width);
+            Console.WriteLine($"table width: {tableWidth}, column width: {columnWidth}");
             if (columnWidth == 1 && tableWidth > 12)
             {
                 throw new ArgumentException("Width must be Non-Prime if bigger than 12");
@@ -31,6 +32,7 @@ namespace CrawfisSoftware.PCG.MazeBuilder
         {
             (int tableWidth, int columnWidth) = DetermineOptimalTableWidth(mazeBuilder.Width);
             _columnWidth = columnWidth;
+            Console.WriteLine($"table width: {tableWidth}, column width: {columnWidth}");
             if (columnWidth == 1)
             {
                 _loopSampler = new LoopSampler(mazeBuilder.Width, mazeBuilder.Height, RandomGenerator);
@@ -73,6 +75,7 @@ namespace CrawfisSoftware.PCG.MazeBuilder
                     {
                         finalTableWidth = tableWidth;
                         finalColumnWidth = width / tableWidth;
+                        break;
                     }
                 }
             }
