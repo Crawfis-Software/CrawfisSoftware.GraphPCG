@@ -5,11 +5,12 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using CrawfisSoftware.Collections.Graph;
 
 namespace CrawfisSoftware.PCG
 {
     /// <summary>
-    /// Static class used to carve a path
+    /// Static class used to carve a path on a maze
     /// </summary>
     public static class MazeWrapperFromGridBitArrays<N,E>
     {
@@ -114,6 +115,36 @@ namespace CrawfisSoftware.PCG
 
                 row++;
             }
+        }
+        
+        /// <summary>
+        /// Return lists of compressed vertical and horizontal edges flags for each row given a maze
+        /// </summary>
+        /// <param name="maze">A mze</param>
+        /// <returns></returns>
+        public static (IEnumerable<BigInteger> vertical, IEnumerable<BigInteger> horizontal) 
+            CreateGridBitArrays(Maze<N, E> maze)
+        {
+            int width = maze.Width;
+            int height = maze.Height;
+            IList<BigInteger> horizontal = new List<BigInteger>();
+            IList<BigInteger> vertical = new List<BigInteger>();
+
+            vertical.Add(0);
+            for (int j = 0; j < height; j++)
+            {
+                BigInteger verticalValue = 0;
+                BigInteger horizontalValue = 0;
+                for (int i = 0; i < width; i++)
+                {
+                    Direction direction = maze.GetDirection(i, j);
+                    if (direction.HasFlag(Direction.N)) verticalValue = BitUtility.OpenBit(verticalValue, i);
+                    if (direction.HasFlag(Direction.E)) horizontalValue = BitUtility.OpenBit(horizontalValue, i);
+                }
+                horizontal.Add(horizontalValue);
+                vertical.Add(verticalValue);
+            }
+            return (vertical, horizontal);
         }
     }
 }

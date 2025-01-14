@@ -99,12 +99,12 @@ namespace CrawfisSoftware.PCG
                         outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
                         if (previousBlocked)
                         {
-                            outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                            outflowCandidatesModified[i] = BitUtility.BlockHighestSetBit(outflowCandidatesModified[i]);
                         }
 
                         if (_random.Next(2) == 0 && i != numColumns - 1)
                         {
-                            outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                            outflowCandidatesModified[i] = BitUtility.BlockLowestSetBit(outflowCandidatesModified[i]);
                             previousBlocked = true;
                         }
                         else
@@ -113,7 +113,7 @@ namespace CrawfisSoftware.PCG
                         }
                     }
 
-                    BigInteger outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
+                    BigInteger outflowCandidate = BitUtility.ConcatinateMultipleBits(outflowCandidatesModified, _width);
                     BigInteger horizontalSpans;
                     while (!ValidateAndUpdateComponentsCarryOverBit(inflow, outflowCandidate, components, 0,
                                out horizontalSpans))
@@ -125,13 +125,13 @@ namespace CrawfisSoftware.PCG
                             outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
                             if (previousBlocked)
                             {
-                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BitUtility.BlockHighestSetBit(outflowCandidatesModified[i]);
                                 //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
                             }
 
                             if (_random.Next(2) == 0 && i != numColumns - 1)
                             {
-                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BitUtility.BlockLowestSetBit(outflowCandidatesModified[i]);
                                 //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
                                 previousBlocked = true;
                             }
@@ -140,7 +140,7 @@ namespace CrawfisSoftware.PCG
                                 previousBlocked = false;
                             }
                         }
-                        outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
+                        outflowCandidate = BitUtility.ConcatinateMultipleBits(outflowCandidatesModified, _width);
                     }
 
                     verticalPaths[1] = outflowCandidate;
@@ -175,13 +175,13 @@ namespace CrawfisSoftware.PCG
                             outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
                             if (previousBlocked)
                             {
-                                outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BitUtility.BlockHighestSetBit(outflowCandidatesModified[i]);
                                 //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
                             }
 
                             if (_random.Next(2) == 0 && i != numColumns - 1)
                             {
-                                outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                outflowCandidatesModified[i] = BitUtility.BlockLowestSetBit(outflowCandidatesModified[i]);
                                 //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
                                 previousBlocked = true;
                             }
@@ -190,7 +190,7 @@ namespace CrawfisSoftware.PCG
                                 previousBlocked = false;
                             }
                         }
-                        outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
+                        outflowCandidate = BitUtility.ConcatinateMultipleBits(outflowCandidatesModified, _width);
                         seenCandidates.Clear();
                         int midfailed = 0;
                         while (!(ValidateAndUpdateComponentsCarryOverBit(inflow, outflowCandidate, components, currentRow,
@@ -204,13 +204,13 @@ namespace CrawfisSoftware.PCG
                                 outflowCandidatesModified[i] = outflowCandidatesOriginal[i];
                                 if (previousBlocked)
                                 {
-                                    outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
+                                    outflowCandidatesModified[i] = BitUtility.BlockHighestSetBit(outflowCandidatesModified[i]);
                                     //outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
                                 }
 
                                 if (_random.Next(2) == 0 && i != numColumns - 1)
                                 {
-                                    outflowCandidatesModified[i] = BlockLowestSetBit(outflowCandidatesModified[i]);
+                                    outflowCandidatesModified[i] = BitUtility.BlockLowestSetBit(outflowCandidatesModified[i]);
                                     //outflowCandidatesModified[i] = BlockHighestSetBit(outflowCandidatesModified[i]);
                                     previousBlocked = true;
                                 }
@@ -219,7 +219,7 @@ namespace CrawfisSoftware.PCG
                                     previousBlocked = false;
                                 }
                             }
-                            outflowCandidate = ConcatinateMultipleBits(outflowCandidatesModified, _width);
+                            outflowCandidate = BitUtility.ConcatinateMultipleBits(outflowCandidatesModified, _width);
                         }
                         //Console.WriteLine($"Row {currentRow} failed: {midfailed} times.");
                         
@@ -247,8 +247,8 @@ namespace CrawfisSoftware.PCG
                         int currentMax = currentInflows.Max();
                         
                         outflowCandidate = BigInteger.Zero;
-                        outflowCandidate = OpenBit(outflowCandidate, currentMin);
-                        outflowCandidate = OpenBit(outflowCandidate, currentMax);
+                        outflowCandidate = BitUtility.OpenBit(outflowCandidate, currentMin);
+                        outflowCandidate = BitUtility.OpenBit(outflowCandidate, currentMax);
                         // int[] middleInflows = new int[numColumns];
                         // for (int i = 0; i < numColumns; i++)
                         // {
@@ -287,8 +287,8 @@ namespace CrawfisSoftware.PCG
                         {
                             seenCandidates.Add(outflowCandidate);
                             outflowCandidate = BigInteger.Zero;
-                            outflowCandidate = OpenBit(outflowCandidate, currentMin);
-                            outflowCandidate = OpenBit(outflowCandidate, currentMax);
+                            outflowCandidate = BitUtility.OpenBit(outflowCandidate, currentMin);
+                            outflowCandidate = BitUtility.OpenBit(outflowCandidate, currentMax);
                             // previousBlocked = false;
                             // for (int i = 0; i < numColumns; i++)
                             // {
@@ -463,73 +463,6 @@ namespace CrawfisSoftware.PCG
             }
             horizontalPaths[rowNumber] = horizontal;
             return true;
-        }
-
-        private bool IsBitSet(int inflow, int pos)
-        {
-            return ValidPathRowEnumerator.InflowsFromBits(_tableWidth, inflow).Contains(pos);
-        }
-
-        private BigInteger BlockBit(BigInteger bit, int pos)
-        {
-            BigInteger one = new BigInteger(1);
-            return bit &= ~(one << pos);
-        }
-        
-        private int BlockBit(int bit, int pos)
-        {
-            return bit &= ~(1 << pos);
-        }
-
-        private BigInteger OpenBit(BigInteger bit, int pos)
-        {
-            BigInteger one = new BigInteger(1);
-            return bit |= (one << pos);
-        }
-        
-        private int OpenBit(int bit, int pos)
-        {
-            return bit |= (1 << pos);
-        }
-
-        private int TotalNumberOfSetBitsBeforeAPos(int inflow, int outflow, int pos)
-        {
-            List<int> inflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth, inflow);
-            List<int> outflows = ValidPathRowEnumerator.InflowsFromBits(_tableWidth, outflow);
-            return inflows.Count(n => n < pos) + outflows.Count(n => n < pos);
-        }
-
-        private void PrintFlow(int flow, int width)
-        {
-            Console.WriteLine(Convert.ToString(flow, 2).PadLeft(width, '0'));
-        }
-
-        private int BlockHighestSetBit(int bit)
-        {
-            int bitCopy = bit;
-            int highestSetBit = 0; // assume that to begin with, x is all zeroes
-            while (bitCopy != 0) {
-                ++highestSetBit;
-                bitCopy >>= 1;
-            }
-            int blockedBit = BlockBit(bit, highestSetBit - 1);
-            return blockedBit;
-        }
-
-        private int BlockLowestSetBit(int bit)
-        {
-            int blockedBit = bit & (bit-1);
-            return blockedBit;
-        }
-
-        private BigInteger ConcatinateMultipleBits(IList<int> bits, int width)
-        {
-            BigInteger mergedBit = bits[0];
-            for (int i = 1; i < bits.Count; i++)
-            {
-                mergedBit = (mergedBit << width) | bits[i];
-            }
-            return mergedBit;
         }
     }
 }

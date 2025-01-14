@@ -120,7 +120,7 @@ namespace CrawfisSoftware.PCG
                 if (UpdateLastRowAndValidateComponent(ref horizontalPaths, inflow, previousInflow, index, components))
                 {
                     metrics.CalculateMetricCurrentRow(inflow, 0, horizontalPaths[_height-1]);
-                    Console.WriteLine(metrics);
+                    //Console.WriteLine(metrics);
                     yield return (verticalPaths, horizontalPaths);
                     
                 }
