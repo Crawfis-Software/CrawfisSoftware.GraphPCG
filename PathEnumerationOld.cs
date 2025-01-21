@@ -1,6 +1,7 @@
 ﻿using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Collections.Maze;
 using System.Collections.Generic;
+using CrawfisSoftware.Path.BitPattern;
 
 namespace CrawfisSoftware.PCG
 {

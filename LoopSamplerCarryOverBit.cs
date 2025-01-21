@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using static CrawfisSoftware.PCG.EnumerationUtilities;
+using CrawfisSoftware.Path.BitPattern;
+using static CrawfisSoftware.Path.BitPattern.EnumerationUtilities;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path
 {
     /// <summary>
     /// Class to sample a path from top to bottom.

@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path.BitPattern
 {
     /// <summary>
     /// A static utility class for bit manipulation

@@ -1,6 +1,7 @@
 using System;
 using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Collections.Maze;
+using CrawfisSoftware.Path;
 
 namespace CrawfisSoftware.PCG.MazeBuilder
 {

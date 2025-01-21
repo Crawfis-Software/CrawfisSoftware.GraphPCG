@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
-namespace CrawfisSoftware.PCG
+//TODO: ValidateAndUpdateComponents methods are too large. Need to refactor these methods.
+namespace CrawfisSoftware.Path.BitPattern
 {
     /// <summary>
     /// Static class to provide some useful enumeration utilities.
     /// </summary>
     public static class EnumerationUtilities
     {
-        
         /// <summary>
         /// Defines a function that takes in the state of the Path enumeration including a 
         /// possible new row or vertical bits and returns true if the user wants to allow it, false otherwise.

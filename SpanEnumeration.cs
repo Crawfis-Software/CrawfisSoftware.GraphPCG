@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path.BitPattern
 {
     /// <summary>
     /// Enumerate all valid path (or loop) fragments, given the desired outflow state of the

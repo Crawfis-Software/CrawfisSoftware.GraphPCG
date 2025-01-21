@@ -1,9 +1,10 @@
-using System;
 using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Collections.Maze;
+using CrawfisSoftware.Path;
 using CrawfisSoftware.PCG;
 
-namespace CrawfisSoftware.PCG.MazeBuilder
+
+namespace CrawfisSoftware.MazeBuilder
 {
     public class MazeBuilderPathSampler<N, E> : MazeBuilderAbstract<N, E>
     {

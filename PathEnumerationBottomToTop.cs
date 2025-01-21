@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using static CrawfisSoftware.PCG.EnumerationUtilities;
+using CrawfisSoftware.Path.BitPattern;
+using static CrawfisSoftware.Path.BitPattern.EnumerationUtilities;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path
 {
     /// <summary>
     /// Static class to enumerate paths
