@@ -1,5 +1,6 @@
 ﻿using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Collections.Maze;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,7 +53,7 @@ namespace CrawfisSoftware.PCG
             //    first = false;
             //    return 2;
             //}
-            return row+3;
+            return row + 3;
         }
 
         /// <summary>
@@ -83,8 +84,8 @@ namespace CrawfisSoftware.PCG
         public override void CreateMaze(bool preserveExistingCells = false)
         {
             int lastColumn = StartCell % Width;
-            int row = 0;
-            while ( row < (Height-1))
+            int row = StartCell / Width;
+            while (row < (Height - 1))
             {
                 //int column = RandomGenerator.Next(Width);
                 int column = PickNextColumn(row, lastColumn, RandomGenerator);
