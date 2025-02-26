@@ -96,7 +96,7 @@ namespace CrawfisSoftware.PCG
         public bool favorForwardCarving { get; set; }
 
         /// <summary>
-        /// Constructor, Takes an existing maze builder (derived from MazeBuilderAbstract) and copies the state over.
+        /// Constructor.
         /// </summary>
         /// <param name="mazeBuilder">A maze builder</param>
         public RandomWalkMazeBuilder(IMazeBuilder<N, E> mazeBuilder)

@@ -53,9 +53,9 @@ namespace CrawfisSoftware.PCG
         }
 
         /// <summary>
-        /// Constructor. Takes an existing maze builder (derived from MazeBuilderAbstract) and copies the state over.
+        /// Constructor.
         /// </summary>
-        /// <param name="mazeBuilder">Previous MazeBuilderAbstract on which to build upon.</param>
+        /// <param name="mazeBuilder">An IMazeBuilder.</param>
         public PathGeneratorSideWinder(IMazeBuilder<N, E> mazeBuilder)
         {
             _mazeBuilder = mazeBuilder;

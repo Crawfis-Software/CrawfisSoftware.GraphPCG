@@ -50,7 +50,7 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="mazeBuilder">MazeBuilderAbstract to use.</param>
+        /// <param name="mazeBuilder">IMazeBuilder to use.</param>
         /// <param name="ignoreStartEnd">Boolean indicating whether to ignore the start and end cells when generating the maze.</param>
         /// <param name="resetStartEnd">Boolean indicating whether to reset the start to the leftmost cell in the loop on the bottom row and 
         /// the end to the rightmost cell on the top row.</param>
