@@ -56,8 +56,8 @@ namespace CrawfisSoftware.PCG
         }
 
         private IMazeBuilder<N, E> _mazeBuilder;
-        protected int numberOfCarvedPassages = 0;
-        protected int numberOfSteps = 0;
+        private int numberOfCarvedPassages = 0;
+        private int numberOfSteps = 0;
         private float ChanceNewWalker { get; set; } = 0.8f;
         private List<Walker> walkers;
         private bool preserveExistingCells = false;
