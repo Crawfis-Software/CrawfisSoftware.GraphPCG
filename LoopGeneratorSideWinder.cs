@@ -1,7 +1,7 @@
 ﻿using System;
 
 using CrawfisSoftware.Collections.Graph;
-using CrawfisSoftware.Collections.Maze;
+using CrawfisSoftware.Maze;
 
 namespace CrawfisSoftware.PCG
 {
@@ -44,7 +44,7 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         public bool ResetStartAndEnd { get; set; }
 
-        private MazeBuilderAbstract<N, E> _mazeBuilder;
+        private IMazeBuilder<N, E> _mazeBuilder;
         private int _lastRow = -99;
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace CrawfisSoftware.PCG
         /// <param name="ignoreStartEnd">Boolean indicating whether to ignore the start and end cells when generating the maze.</param>
         /// <param name="resetStartEnd">Boolean indicating whether to reset the start to the leftmost cell in the loop on the bottom row and 
         /// the end to the rightmost cell on the top row.</param>
-        public LoopGeneratorSideWinder(MazeBuilderAbstract<N, E> mazeBuilder, bool ignoreStartEnd = true, bool resetStartEnd = false)
+        public LoopGeneratorSideWinder(IMazeBuilder<N, E> mazeBuilder, bool ignoreStartEnd = true, bool resetStartEnd = false)
         {
             this._mazeBuilder = mazeBuilder;
             this.PickNextColumns = DefaultPickNextColumnsFunc;
@@ -68,7 +68,7 @@ namespace CrawfisSoftware.PCG
         /// </summary>
         /// <param name="preserveExistingCells">Boolean indicating whether to only replace maze cells that are undefined.
         /// Default is false.</param>
-        public void CreateMaze(bool preserveExistingCells = true)
+        public void CarveLoop(bool preserveExistingCells = true)
         {
             (int leftColumn, int rightColumn) = PickNextColumns(0, 0, _mazeBuilder.Width - 1, _mazeBuilder.RandomGenerator);
             leftColumn = (leftColumn < 0) ? 0 : leftColumn;

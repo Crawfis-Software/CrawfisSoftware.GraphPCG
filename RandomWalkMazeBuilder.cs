@@ -1,5 +1,5 @@
 ﻿using CrawfisSoftware.Collections.Graph;
-using CrawfisSoftware.Collections.Maze;
+using CrawfisSoftware.Maze;
 
 using System.Collections.Generic;
 
@@ -10,19 +10,19 @@ namespace CrawfisSoftware.PCG
     /// </summary>
     /// <typeparam name="N">The type used for node labels</typeparam>
     /// <typeparam name="E">The type used for edge weights</typeparam>
-    public class RandomWalkMazeBuilder<N, E> : MazeBuilderAbstract<N, E>
+    public class RandomWalkMazeBuilder<N, E>
     {
         // Having Walker in a separate class allows for multiple walkers. Need to make this thread safe though.
         private class Walker
         {
-            private RandomWalkMazeBuilder<N, E> mazeBuilder;
+            private IMazeBuilder<N, E> mazeBuilder;
             public int currentCell;
             private System.Random random;
             private bool preserveExistingCells;
             private bool favorForwardCarving;
             private int[] nextCellIncrement;
             private int lastMove;
-            public void StartWalker(RandomWalkMazeBuilder<N, E> mazeBuilder, int cell, bool preserveExistingCells, bool favorForwardCarving, System.Random random)
+            public void StartWalker(IMazeBuilder<N, E> mazeBuilder, int cell, bool preserveExistingCells, bool favorForwardCarving, System.Random random)
             {
                 this.mazeBuilder = mazeBuilder;
                 currentCell = cell;
@@ -33,17 +33,17 @@ namespace CrawfisSoftware.PCG
                 lastMove = nextCellIncrement[random.Next(4)];
             }
             // Could move carving logic to the RandomWalk class.
-            public void Update()
+            public void Update(RandomWalkMazeBuilder<N, E> walkerController)
             {
                 int nextCell = currentCell + Move();
-                if (mazeBuilder.grid.ContainsEdge(currentCell, nextCell))
+                if (mazeBuilder.Grid.ContainsEdge(currentCell, nextCell))
                 {
                     if (mazeBuilder.CarvePassage(currentCell, nextCell, preserveExistingCells))
                     {
-                        mazeBuilder.numberOfCarvedPassages++;
+                        walkerController.numberOfCarvedPassages++;
                     }
                     currentCell = nextCell;
-                    mazeBuilder.numberOfSteps++;
+                    walkerController.numberOfSteps++;
                 }
             }
 
@@ -55,8 +55,9 @@ namespace CrawfisSoftware.PCG
             }
         }
 
-        private int numberOfCarvedPassages = 0;
-        private int numberOfSteps = 0;
+        private IMazeBuilder<N, E> _mazeBuilder;
+        protected int numberOfCarvedPassages = 0;
+        protected int numberOfSteps = 0;
         private float ChanceNewWalker { get; set; } = 0.8f;
         private List<Walker> walkers;
         private bool preserveExistingCells = false;
@@ -95,25 +96,12 @@ namespace CrawfisSoftware.PCG
         public bool favorForwardCarving { get; set; }
 
         /// <summary>
-        /// Constructor. All of the parameters are the same as the grid data type.
-        /// </summary>
-        /// <param name="width">Number of nodes in the horizontal direction.</param>
-        /// <param name="height">Number of nodes in the vertical direction.</param>
-        /// <param name="nodeAccessor">A GetGridLabel delegate instance used to determine
-        /// a node's label when queried.</param>
-        /// <param name="edgeAccessor">A GetEdgeLabel delegate instance used to determine
-        /// a edge's label when queried.</param>
-        public RandomWalkMazeBuilder(int width, int height, GetGridLabel<N> nodeAccessor = null, GetEdgeLabel<E> edgeAccessor = null)
-            : base(width, height, nodeAccessor, edgeAccessor)
-        {
-        }
-
-        /// <summary>
         /// Constructor, Takes an existing maze builder (derived from MazeBuilderAbstract) and copies the state over.
         /// </summary>
         /// <param name="mazeBuilder">A maze builder</param>
-        public RandomWalkMazeBuilder(MazeBuilderAbstract<N, E> mazeBuilder) : base(mazeBuilder)
+        public RandomWalkMazeBuilder(IMazeBuilder<N, E> mazeBuilder)
         {
+            _mazeBuilder = mazeBuilder;
         }
 
         /// <summary>
@@ -122,19 +110,20 @@ namespace CrawfisSoftware.PCG
         /// first passing in a value of true. New walkers would be
         /// spawned on each invocation.
         /// </summary>
+        /// <param name="startCell">The starting cell for the walkers.</param>
         /// <param name="preserveExistingCells">If true, _occupied with existing
         /// values already set will not be affected.</param>
-        public override void CreateMaze(bool preserveExistingCells = false)
+        public void CarveWalk(int startCell, bool preserveExistingCells = false)
         {
             numberOfCarvedPassages = 0;
             numberOfSteps = 0;
-            numberOfNewPassages = (int)(PercentToCarve * grid.NumberOfNodes);
+            numberOfNewPassages = (int)(PercentToCarve * _mazeBuilder.Grid.NumberOfNodes);
             //numberOfNewPassages = (int)(PercentToCarve * 2 * (Width - 1) * (Height - 1) + 2 * Width + 2 * Height);
             this.preserveExistingCells = preserveExistingCells;
-            InitializeWalkers();
+            InitializeWalkers(startCell);
         }
 
-        private void InitializeWalkers()
+        private void InitializeWalkers(int startCell)
         {
             walkers = new List<Walker>(NumberOfWalkers);
             for (int i = 0; i < InitialNumberOfWalkers; i++)
@@ -144,9 +133,8 @@ namespace CrawfisSoftware.PCG
                 //int startCell = RandomGenerator.Next(Width - 2) + 1;
                 //int heightCheck = (Height > 2) ? RandomGenerator.Next(Height - 2) + 1 : Height - 1;
                 //startCell += Width * heightCheck;
-                int startCell = this.StartCell;
 
-                initialWalker.StartWalker(this, startCell, preserveExistingCells, favorForwardCarving, RandomGenerator);
+                initialWalker.StartWalker(_mazeBuilder, startCell, preserveExistingCells, favorForwardCarving, new System.Random(_mazeBuilder.RandomGenerator.Next()));
                 walkers.Add(initialWalker);
             }
 
@@ -155,20 +143,21 @@ namespace CrawfisSoftware.PCG
 
         private void PerformWalk()
         {
+            var random = new System.Random(_mazeBuilder.RandomGenerator.Next());
             while (true)
             {
                 foreach (var walker in walkers)
                 {
-                    walker.Update();
+                    walker.Update(this);
                     if (numberOfCarvedPassages < numberOfNewPassages && numberOfSteps < MaxWalkingDistance)
                         continue;
                     return;
                 }
-                if ((walkers.Count < NumberOfWalkers) && (this.RandomGenerator.NextDouble() < ChanceNewWalker))
+                if ((walkers.Count < NumberOfWalkers) && (random.NextDouble() < ChanceNewWalker))
                 {
                     Walker newWalker = new Walker();
-                    int startCell = walkers[RandomGenerator.Next(walkers.Count)].currentCell;
-                    newWalker.StartWalker(this, startCell, preserveExistingCells, favorForwardCarving, this.RandomGenerator);
+                    int startCell = walkers[random.Next(walkers.Count)].currentCell;
+                    newWalker.StartWalker(_mazeBuilder, startCell, preserveExistingCells, favorForwardCarving, new System.Random(random.Next()));
                     walkers.Add(newWalker);
                 }
             }
