@@ -50,26 +50,25 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="mazeBuilder">IMazeBuilder to use.</param>
         /// <param name="ignoreStartEnd">Boolean indicating whether to ignore the start and end cells when generating the maze.</param>
         /// <param name="resetStartEnd">Boolean indicating whether to reset the start to the leftmost cell in the loop on the bottom row and 
         /// the end to the rightmost cell on the top row.</param>
-        public LoopGeneratorSideWinder(IMazeBuilder<N, E> mazeBuilder, bool ignoreStartEnd = true, bool resetStartEnd = false)
+        public LoopGeneratorSideWinder(bool ignoreStartEnd = true, bool resetStartEnd = false)
         {
-            this._mazeBuilder = mazeBuilder;
             this.PickNextColumns = DefaultPickNextColumnsFunc;
             this.IgnoreStartAndEnd = ignoreStartEnd;
             this.ResetStartAndEnd = resetStartEnd;
-            MaxSpanWidth = _mazeBuilder.Width;
         }
 
         /// <summary>
         /// Create a maze using the Sidewinder algorithm
         /// </summary>
+        /// <param name="mazeBuilder">IMazeBuilder to use.</param>
         /// <param name="preserveExistingCells">Boolean indicating whether to only replace maze cells that are undefined.
         /// Default is false.</param>
-        public void CarveLoop(bool preserveExistingCells = true)
+        public void CarveLoop(IMazeBuilder<N, E> mazeBuilder, bool preserveExistingCells = true)
         {
+            this._mazeBuilder = mazeBuilder;
             (int leftColumn, int rightColumn) = PickNextColumns(0, 0, _mazeBuilder.Width - 1, _mazeBuilder.RandomGenerator);
             leftColumn = (leftColumn < 0) ? 0 : leftColumn;
             leftColumn = (leftColumn >= rightColumn) ? rightColumn - 1 : leftColumn;

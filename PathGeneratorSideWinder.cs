@@ -55,17 +55,21 @@ namespace CrawfisSoftware.PCG
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="mazeBuilder">An IMazeBuilder.</param>
-        public PathGeneratorSideWinder(IMazeBuilder<N, E> mazeBuilder)
+        public PathGeneratorSideWinder()
         {
-            _mazeBuilder = mazeBuilder;
             this.PickNextColumn = DefaultPickNextColumnFunc;
             this.PickNextRow = DefaultPickNextRowFunc;
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Generate a path from the start column on the bottom row to the end column
+        /// </summary>
+        /// <param name="mazeBuilder">An IMazeBuilder.</param>
+        /// <param name="preserveExistingCells">Boolean indicating whether to only replace maze cells that are undefined.
+        /// Default is false.</param>
         public void CarvePath(IMazeBuilder<N, E> mazeBuilder, bool preserveExistingCells = false)
         {
+            _mazeBuilder = mazeBuilder;
             int lastColumn = mazeBuilder.StartCell % mazeBuilder.Width;
             int row = mazeBuilder.StartCell / mazeBuilder.Width;
             while (row < (mazeBuilder.Height - 1))
