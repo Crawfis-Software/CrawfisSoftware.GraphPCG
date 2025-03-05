@@ -171,6 +171,15 @@ namespace CrawfisSoftware.Path
             
 
         }
+        
+        /// <summary>
+        /// Return the width of the LoopSampler
+        /// </summary>
+        /// <returns>The width of the LoopSampler</returns>
+        public int GetWidth()
+        {
+            return _tableWidth;
+        }
 
         private IList<IList<int>> InitializeComponents(int firstRow, int numColumns)
         {

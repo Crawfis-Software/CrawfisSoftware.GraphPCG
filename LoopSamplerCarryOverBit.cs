@@ -356,6 +356,14 @@ namespace CrawfisSoftware.Path
 
         }
         
+        /// <summary>
+        /// Return the width of the LoopSampler
+        /// </summary>
+        /// <returns>The width of the LoopSampler</returns>
+        public int GetWidth()
+        {
+            return _tableWidth;
+        }
 
         private bool CheckOneRowBeforeStartAndEnd(int outflow, int currentRow, int startRow, int endRow)
         {

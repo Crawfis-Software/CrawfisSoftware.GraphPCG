@@ -174,5 +174,14 @@ namespace CrawfisSoftware.Path
             
 
         }
+        
+        /// <summary>
+        /// Return the width of the LoopSampler
+        /// </summary>
+        /// <returns>The width of the LoopSampler</returns>
+        public int GetWidth()
+        {
+            return _width;
+        }
     }
 }
