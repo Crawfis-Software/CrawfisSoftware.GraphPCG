@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path.BitPattern
 {
     /// <summary>
     /// Two static utility methods for enumerating Bit patterns, plus an additional 

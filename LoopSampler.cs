@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
-using static CrawfisSoftware.PCG.EnumerationUtilities;
+using CrawfisSoftware.Path.BitPattern;
+using static CrawfisSoftware.Path.BitPattern.EnumerationUtilities;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path
 {
     /// <summary>
     /// Class to sample a path from top to bottom.
@@ -174,6 +170,15 @@ namespace CrawfisSoftware.PCG
             return  (verticalPaths, horizontalPaths);
             
 
+        }
+        
+        /// <summary>
+        /// Return the width of the LoopSampler
+        /// </summary>
+        /// <returns>The width of the LoopSampler</returns>
+        public int GetWidth()
+        {
+            return _tableWidth;
         }
 
         private IList<IList<int>> InitializeComponents(int firstRow, int numColumns)

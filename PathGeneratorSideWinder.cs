@@ -1,11 +1,6 @@
-﻿using CrawfisSoftware.Collections.Graph;
-using CrawfisSoftware.Collections.Maze;
+﻿using CrawfisSoftware.Maze;
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CrawfisSoftware.PCG
 {
@@ -13,8 +8,9 @@ namespace CrawfisSoftware.PCG
     /// Generate a path from the start column on the bottom row to the end column
     /// on the top row.
     /// </summary>
-    public class PathGeneratorSideWinder<N, E> : MazeBuilderAbstract<N, E>
+    public class PathGeneratorSideWinder<N, E>
     {
+        IMazeBuilder<N, E> _mazeBuilder;
         /// <summary>
         /// Get or set the maximum horizontal passage length used in the default
         /// PickNextColumn function.
@@ -37,7 +33,7 @@ namespace CrawfisSoftware.PCG
 
         private int DefaultPickNextColumnFunc(int row, int previousColumn, System.Random randomGenerator = null)
         {
-            int delta = RandomGenerator.Next(Width) - previousColumn;
+            int delta = randomGenerator.Next(_mazeBuilder.Width) - previousColumn;
             int sign = 1;
             if (delta < 0) sign = -1;
             delta = ((sign * delta) > MaxSpanWidth) ? sign * MaxSpanWidth : delta;
@@ -57,51 +53,42 @@ namespace CrawfisSoftware.PCG
         }
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
-        /// <param name="width">The width of the desired maze</param>
-        /// <param name="height">The height of the desired maze</param>
-        /// <param name="nodeAccessor">A function to retrieve any node labels</param>
-        /// <param name="edgeAccessor">A function to retrieve any edge weights</param>
-        public PathGeneratorSideWinder(int width, int height, GetGridLabel<N> nodeAccessor = null, GetEdgeLabel<E> edgeAccessor = null)
-            : base(width, height, nodeAccessor, edgeAccessor)
+        public PathGeneratorSideWinder()
         {
             this.PickNextColumn = DefaultPickNextColumnFunc;
             this.PickNextRow = DefaultPickNextRowFunc;
         }
 
         /// <summary>
-        /// Constructor. Takes an existing maze builder (derived from MazeBuilderAbstract) and copies the state over.
+        /// Generate a path from the start column on the bottom row to the end column
         /// </summary>
-        /// <param name="mazeBuilder">Previous MazeBuilderAbstract on which to build upon.</param>
-        public PathGeneratorSideWinder(MazeBuilderAbstract<N, E> mazeBuilder) : base(mazeBuilder)
+        /// <param name="mazeBuilder">An IMazeBuilder.</param>
+        /// <param name="preserveExistingCells">Boolean indicating whether to only replace maze cells that are undefined.
+        /// Default is false.</param>
+        public void CarvePath(IMazeBuilder<N, E> mazeBuilder, bool preserveExistingCells = false)
         {
-            this.PickNextColumn = DefaultPickNextColumnFunc;
-            this.PickNextRow = DefaultPickNextRowFunc;
-        }
-
-        /// <inheritdoc/>
-        public override void CreateMaze(bool preserveExistingCells = false)
-        {
-            int lastColumn = StartCell % Width;
-            int row = StartCell / Width;
-            while (row < (Height - 1))
+            _mazeBuilder = mazeBuilder;
+            int lastColumn = mazeBuilder.StartCell % mazeBuilder.Width;
+            int row = mazeBuilder.StartCell / mazeBuilder.Width;
+            while (row < (mazeBuilder.Height - 1))
             {
                 //int column = RandomGenerator.Next(Width);
-                int column = PickNextColumn(row, lastColumn, RandomGenerator);
+                int column = PickNextColumn(row, lastColumn, mazeBuilder.RandomGenerator);
                 column = (column < 0) ? 0 : column;
-                column = (column >= Width) ? Width - 1 : column;
+                column = (column >= mazeBuilder.Width) ? mazeBuilder.Width - 1 : column;
                 //CarveDirectionally(column, row, Direction.N, preserveExistingCells);
-                CarveHorizontalSpan(row, lastColumn, column, preserveExistingCells);
+                mazeBuilder.CarveHorizontalSpan(row, lastColumn, column, preserveExistingCells);
                 lastColumn = column;
-                int nextRow = PickNextRow(row, column, RandomGenerator);
+                int nextRow = PickNextRow(row, column, mazeBuilder.RandomGenerator);
                 nextRow = (nextRow < 0) ? 0 : nextRow;
-                nextRow = (nextRow >= Height) ? Height - 1 : nextRow;
-                CarveVerticalSpan(column, row, nextRow, preserveExistingCells);
+                nextRow = (nextRow >= mazeBuilder.Height) ? mazeBuilder.Height - 1 : nextRow;
+                mazeBuilder.CarveVerticalSpan(column, row, nextRow, preserveExistingCells);
                 row = nextRow;
             }
-            int exitColumn = EndCell % Width;
-            CarveHorizontalSpan(Height - 1, lastColumn, exitColumn, preserveExistingCells);
+            int exitColumn = mazeBuilder.EndCell % mazeBuilder.Width;
+            mazeBuilder.CarveHorizontalSpan(mazeBuilder.Height - 1, lastColumn, exitColumn, preserveExistingCells);
         }
     }
 }

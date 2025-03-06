@@ -1,10 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using static CrawfisSoftware.PCG.EnumerationUtilities;
+using CrawfisSoftware.Path.BitPattern;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path
 {
     /// <summary>
     /// Class to sample a path from top to bottom.
@@ -69,7 +68,7 @@ namespace CrawfisSoftware.PCG
                 {
                     int horizontalSpans;
                     verticalPaths[1] = outflow;
-                    if (ValidateAndUpdateComponents(inflow, outflow, components, 0,
+                    if (EnumerationUtilities.ValidateAndUpdateComponents(inflow, outflow, components, 0,
                                out horizontalSpans))
                     {
                         var copy = metrics.Copy();
@@ -94,7 +93,7 @@ namespace CrawfisSoftware.PCG
                 foreach (short outflow in ValidPathRowEnumerator.ValidRowList(_width, inflow))
                 {
                     verticalPaths[index + 1] = outflow;
-                    if (ValidateAndUpdateComponents(inflow, outflow, components, index,
+                    if (EnumerationUtilities.ValidateAndUpdateComponents(inflow, outflow, components, index,
                             out int horizontalSpans))
                     {
                         horizontalPaths[index] = horizontalSpans;
@@ -120,7 +119,7 @@ namespace CrawfisSoftware.PCG
                 if (UpdateLastRowAndValidateComponent(ref horizontalPaths, inflow, previousInflow, index, components))
                 {
                     metrics.CalculateMetricCurrentRow(inflow, 0, horizontalPaths[_height-1]);
-                    Console.WriteLine(metrics);
+                    //Console.WriteLine(metrics);
                     yield return (verticalPaths, horizontalPaths);
                     
                 }
@@ -184,7 +183,7 @@ namespace CrawfisSoftware.PCG
 
                 componentList[end] = componentList[start];
             }
-            if (NumberOfDistinctValues(componentList) != 2)
+            if (EnumerationUtilities.NumberOfDistinctValues(componentList) != 2)
             {
                 return false;
             }

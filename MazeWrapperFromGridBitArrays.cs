@@ -1,4 +1,5 @@
-﻿using CrawfisSoftware.Collections.Maze;
+﻿using CrawfisSoftware.Maze;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace CrawfisSoftware.PCG
     /// <summary>
     /// Static class used to carve a path
     /// </summary>
-    public static class MazeWrapperFromGridBitArrays<N,E>
+    public static class MazeWrapperFromGridBitArrays<N, E>
     {
         /// <summary>
         /// Carve openings based on the list of compressed vertical and horizontal edge flags for each row
@@ -21,7 +22,8 @@ namespace CrawfisSoftware.PCG
         /// indicate a passage should be carved to the next row (i,j)->(i,j+1). Bits are read right to left as the grid goes left to right.</param>
         /// <param name="horizontalPaths">A list of rows, where each row has a bitpattern. 1's in the bit pattern 
         /// indicate a passage should be carved to the next cell (i,j)->(i+1,j). Bits are read right to left as the grid goes left to right.</param>
-        public static void CarvePath(MazeBuilderAbstract<N, E> mazeBuilder, IList<int> verticalPaths,
+        // Todo: Change to CarveFromBitPatterns and add this to make it an extension method.
+        public static void CarvePath(IMazeBuilder<N, E> mazeBuilder, IList<int> verticalPaths,
             IList<int> horizontalPaths)
 
         {
@@ -47,7 +49,7 @@ namespace CrawfisSoftware.PCG
             }
 
             int row = 0;
-            foreach(int passages in horizontalPaths)
+            foreach (int passages in horizontalPaths)
             {
                 int horizontalBits = passages;
                 for (int i = 0; i < mazeBuilder.Width; i++)
@@ -63,7 +65,7 @@ namespace CrawfisSoftware.PCG
                 row++;
             }
         }
-        
+
         /// <summary>
         /// Carve openings based on the list of compressed vertical and horizontal edge flags for each row
         /// </summary>
@@ -72,7 +74,7 @@ namespace CrawfisSoftware.PCG
         /// indicate a passage should be carved to the next row (i,j)->(i,j+1). Bits are read right to left as the grid goes left to right.</param>
         /// <param name="horizontalPaths">A list of rows, where each row has a bitpattern. 1's in the bit pattern 
         /// indicate a passage should be carved to the next cell (i,j)->(i+1,j). Bits are read right to left as the grid goes left to right.</param>
-        public static void CarvePath(MazeBuilderAbstract<N, E> mazeBuilder, IList<BigInteger> verticalPaths,
+        public static void CarvePath(IMazeBuilder<N, E> mazeBuilder, IList<BigInteger> verticalPaths,
             IList<BigInteger> horizontalPaths)
 
         {
@@ -99,7 +101,7 @@ namespace CrawfisSoftware.PCG
             }
 
             int row = 0;
-            foreach(BigInteger passages in horizontalPaths)
+            foreach (BigInteger passages in horizontalPaths)
             {
                 BigInteger horizontalBits = passages;
                 for (int i = 0; i < mazeBuilder.Width; i++)

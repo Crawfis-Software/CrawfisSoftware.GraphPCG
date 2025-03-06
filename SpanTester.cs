@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path.BitPattern
 {
     internal static class SpanTester
     {

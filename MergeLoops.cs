@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
+﻿using System.Collections.Generic;
+using CrawfisSoftware.Path.BitPattern;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path
 {
     static internal class MergeLoops
     {

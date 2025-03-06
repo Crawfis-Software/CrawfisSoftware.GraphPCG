@@ -1,10 +1,9 @@
 ﻿using CrawfisSoftware.Collections;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path.BitPattern
 {
     /// <summary>
     /// Enum of possible directions an inflow can go.

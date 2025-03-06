@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Numerics;
 using System.Threading.Tasks;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path.BitPattern
 {
     /// <summary>
     /// Static class used to enumerate rows with an inFlow constraint.

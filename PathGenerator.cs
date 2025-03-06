@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using CrawfisSoftware.Path.BitPattern;
 
-namespace CrawfisSoftware.PCG
+namespace CrawfisSoftware.Path
 {
     /// <summary>
     /// Create a path using the Path enumerator logic
