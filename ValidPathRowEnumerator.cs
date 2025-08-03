@@ -10,7 +10,7 @@ namespace CrawfisSoftware.Path.BitPattern
     /// </summary>
     public static class ValidPathRowEnumerator
     {
-        private static IList<IList<short>> _preComputedRowTables;
+        public static IList<IList<short>> _preComputedRowTables;
         private static IList<IList<short>> _preComputedOddRowTables;
         private static IList<IList<short>> _preComputedEvenRowTables;
         private static int _tableWidth;
