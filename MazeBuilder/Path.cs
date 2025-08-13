@@ -14,7 +14,7 @@ namespace CrawfisSoftware.MazeBuilder
     public static /*partial*/ class Path
     {
         private static PathSamplerBottomToTop _pathSampler;
-        
+
         /// <summary>
         /// Create a path maze using the sweeping algorithm and may take a while.
         /// </summary>
@@ -23,7 +23,7 @@ namespace CrawfisSoftware.MazeBuilder
         /// Default is false.</param>
         /// <typeparam name="N">The type used for node labels</typeparam>
         /// <typeparam name="E">The type used for edge weights</typeparam>
-        public static void CreatePath<N,E> (this IMazeBuilder<N,E> mazeBuilder,bool preserveExistingCells = false)
+        public static void CreatePath<N, E>(this IMazeBuilder<N, E> mazeBuilder, bool preserveExistingCells = false)
         {
             if (_pathSampler == null || _pathSampler.GetWidth() != mazeBuilder.Width)
             {
@@ -32,7 +32,7 @@ namespace CrawfisSoftware.MazeBuilder
             }
 
             var samplerGrid = _pathSampler.Sample(mazeBuilder.StartCell, mazeBuilder.EndCell);
-            MazeWrapperFromGridBitArrays<N,E>.CarvePath(mazeBuilder, samplerGrid.vertical, samplerGrid.horizontal);
+            MazeWrapperFromGridBitArrays.CarveFromBitPatterns<N, E>(mazeBuilder, samplerGrid.vertical, samplerGrid.horizontal);
         }
     }
 }
