@@ -1,4 +1,5 @@
-﻿using CrawfisSoftware.Collections;
+﻿using CrawfisSoftware.Extensions;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,4 +1,5 @@
 using System;
+
 using CrawfisSoftware.Collections.Graph;
 using CrawfisSoftware.Maze;
 using CrawfisSoftware.Path;
@@ -24,18 +25,18 @@ namespace CrawfisSoftware.PCG.MazeBuilder
         /// Default is false.</param>
         /// <typeparam name="N">The type used for node labels</typeparam>
         /// <typeparam name="E">The type used for edge weights</typeparam>
-        public static void CreateLoop<N,E>(this IMazeBuilder<N,E> mazeBuilder, bool preserveExistingCells = false)
+        public static void CreateLoop<N, E>(this IMazeBuilder<N, E> mazeBuilder, bool preserveExistingCells = false)
         {
             CheckTable(mazeBuilder);
             if (_columnWidth == 1)
             {
                 var samplerGrid = _loopSampler.Sample();
-                MazeWrapperFromGridBitArrays<N,E>.CarvePath(mazeBuilder, samplerGrid.vertical, samplerGrid.horizontal);
+                MazeWrapperFromGridBitArrays.CarveFromBitPatterns<N, E>(mazeBuilder, samplerGrid.vertical, samplerGrid.horizontal);
             }
             else
             {
                 var samplerGrid = _loopSamplerCarryOverBit.Sample(_columnWidth);
-                MazeWrapperFromGridBitArrays<N,E>.CarvePath(mazeBuilder, samplerGrid.vertical, samplerGrid.horizontal);
+                MazeWrapperFromGridBitArrays.CarveFromBitPatterns<N, E>(mazeBuilder, samplerGrid.vertical, samplerGrid.horizontal);
             }
 
         }
@@ -61,7 +62,7 @@ namespace CrawfisSoftware.PCG.MazeBuilder
             return (finalTableWidth, finalColumnWidth);
         }
 
-        private static void CheckTable<N,E>(IMazeBuilder<N,E> mazeBuilder)
+        private static void CheckTable<N, E>(IMazeBuilder<N, E> mazeBuilder)
         {
             (int tableWidth, int columnWidth) = DetermineOptimalTableWidth(mazeBuilder.Width);
             if (columnWidth == 1 && tableWidth > 12)
