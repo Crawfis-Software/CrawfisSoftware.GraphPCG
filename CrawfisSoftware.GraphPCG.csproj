@@ -22,6 +22,7 @@
     <None Include="icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="CrawfisSoftware.BitManipulation" Version="0.1.2" />
     <PackageReference Include="CrawfisSoftware.Maze" Version="0.1.*" />
   </ItemGroup>
 </Project>
