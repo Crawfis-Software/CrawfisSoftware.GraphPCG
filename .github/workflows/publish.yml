@@ -17,16 +17,15 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore CrawfisSoftware.GraphPCG.csproj
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build CrawfisSoftware.GraphPCG.csproj --configuration Release --no-restore
 
       - name: Pack (version from tag)
         shell: bash
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          dotnet pack -c Release --no-restore -o out -p:PackageVersion=$VERSION -p:Version=$VERSION
-
+          dotnet pack CrawfisSoftware.GraphPCG.csproj -c Release --no-restore -o out -p:PackageVersion=$VERSION -p:Version=$VERSION
       - name: Push to NuGet
         run: dotnet nuget push "out/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source "https://api.nuget.org/v3/index.json" --skip-duplicate
