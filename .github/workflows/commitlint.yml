@@ -1,0 +1,48 @@
+name: commitlint
+
+on:
+  # `on` defines the events that trigger this workflow.
+  #
+  # When: Runs for every pull request event (open/synchronize/reopen by default).
+  # How: GitHub sends a `pull_request` event payload containing base/head SHAs.
+  pull_request:
+
+permissions:
+  # `permissions` controls the default permissions of the workflow's `GITHUB_TOKEN`.
+  # This workflow only needs read access to repository contents to checkout and inspect commits.
+  contents: read
+
+jobs:
+  # `jobs` is a map of job definitions. Jobs run on separate runners.
+  # This workflow has a single job that lints commit messages in the PR.
+  commitlint:
+    # Job id: `commitlint` (an identifier used by GitHub Actions; not a reserved keyword).
+    # Purpose: Enforce commit message conventions (typically Conventional Commits) on pull requests.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        # Fetch the repository so commit messages are available locally.
+        # `fetch-depth: 0` pulls full history; commitlint may_attach to commits across merges,
+        # and the `--from/--to` SHAs can require more than a shallow clone.
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        # Install Node.js so we can run `npm` and `npx commitlint`.
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        # Install repository dev dependencies (expected to include `@commitlint/cli` and config).
+        # This relies on a `package.json` in the repository root (or configured npm workspace setup).
+        run: npm install
+
+      - name: Lint commits
+        # Lint commit messages in the pull request.
+        # - `--from` is the base commit SHA (the target branch commit the PR is built against).
+        # - `--to` is the head commit SHA (the latest commit in the PR branch).
+        # These values come from the pull_request event payload.
+        # `--verbose` prints which commits were checked and why any failed.
+        run: npx commitlint --from="${{ github.event.pull_request.base.sha }}" --to="${{ github.event.pull_request.head.sha }}" --verbose

@@ -1,0 +1,48 @@
+name: release-please
+
+# This workflow automates release PRs and GitHub Releases using Release Please.
+#
+# What it does:
+# - Uses commit history + Conventional Commits to determine the next version.
+# - Opens/updates a "Release PR" on `master` that bumps versions and updates changelogs.
+# - When that PR is merged, it creates a GitHub Release and tags the repository.
+#
+# Reference:
+# - Workflow syntax (`on`, `jobs`, `steps`, etc.)
+#   https://docs.github.com/actions/writing-workflows/workflow-syntax-for-github-actions
+# - Release Please action
+#   https://github.com/googleapis/release-please-action
+
+on:
+  # `on` defines the events that trigger this workflow.
+  push:
+    # When: Any push to `main`.
+    # How: Typically this means merges/commits landing on the default branch.
+    branches:
+      - main
+  # When: Manually triggered from the Actions tab.
+  workflow_dispatch: {}
+
+permissions:
+  # `permissions` controls what the workflow's `GITHUB_TOKEN` may do.
+  # Release Please needs to:
+  # - write repository contents (create tags/releases, commit version bumps)
+  # - manage pull requests (open/update the Release PR)
+  contents: write
+  pull-requests: write
+
+jobs:
+  # `jobs` is a map of job definitions. Each job runs on a fresh runner.
+  # This workflow has a single job that runs the Release Please action.
+  release-please:
+    # Job id: `release-please` (an identifier used by GitHub Actions; not a reserved keyword).
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Please
+        # Run Release Please.
+        # - `config-file` describes how releases should be generated (release type, package paths, etc.).
+        # - `manifest-file` tracks the last released versions per package/path.
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: .release-please-config.json
+          manifest-file: .release-please-manifest.json

@@ -1,0 +1,46 @@
+{
+  "_comment": [
+    "Google Release Please configuration.",
+    "\n",
+    "What this file controls:",
+    "- How versions are calculated from commits.",
+    "- How Git tags and GitHub Releases are named.",
+    "- Which files get their version fields updated by the Release PR.",
+    "\n",
+    "Where it is used:",
+    "- The GitHub Actions workflow at `.github/workflows/release-please.yml` runs `googleapis/release-please-action` and points to this config.",
+    "\n",
+    "Docs:",
+    "- Release Please: https://github.com/googleapis/release-please",
+    "- Config schema: https://github.com/googleapis/release-please/blob/main/docs/configuration.md"
+  ],
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "_comment_releaseType": "Top-level default release strategy. `simple` is a general-purpose strategy that updates a changelog and bumps versions based on commits.",
+  "include-v-in-tag": true,
+  "_comment_includeV": "If true, tags are prefixed with `v` (e.g. `v1.2.3`). This matches the packaging workflow trigger in `.github/workflows/nuget-package.yml` which listens for tags `v*`.",
+  "include-component-in-tag": false,
+  "_comment_includeComponent": "If true, tags include the package/component name (useful for monorepos). This repo uses a single component so it is disabled.",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "_comment_packageRoot": "Per-package config. The key `.` means the repository root is treated as the package.",
+      "changelog-path": "CHANGELOG.md",
+      "_comment_changelogPath": "The changelog file that Release Please will update in the Release PR.",
+      "extra-files": [
+        {
+          "type": "xml",
+          "path": "CrawfisSoftware.Tiling.csproj",
+          "xpath": "//Project/PropertyGroup/Version",
+          "_comment": "Also update the `<Version>` element in the project file so the produced NuGet package version matches the release tag."
+        },
+        {
+          "type": "json",
+          "path": "Packages/com.crawfissoftware.tiling/package.json",
+          "jsonpath": "$.version",
+          "_comment": "Also update the Unity package version (`package.json` -> `version`) so the UPM package aligns with the release tag."
+        }
+      ]
+    }
+  }
+}

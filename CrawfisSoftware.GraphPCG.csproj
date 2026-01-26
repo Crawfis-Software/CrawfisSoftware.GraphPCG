@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -25,4 +26,20 @@
     <PackageReference Include="CrawfisSoftware.BitManipulation" Version="0.1.2" />
     <PackageReference Include="CrawfisSoftware.Maze" Version="0.1.*" />
   </ItemGroup>
+  <PropertyGroup>
+    <PackageId>CrawfisSoftware.GraphPCG</PackageId>
+    <Authors>Crawfis Software</Authors>
+    <Description>[Obsolete] Complex algorithms for loop and path enumeration</Description>
+    <RepositoryUrl>https://github.com/Crawfis-Software/CrawfisSoftware.GraphPCG</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Crawfis-Software/CrawfisSoftware.GraphPCG</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>Please see CHANGELOG.md for release details.</PackageReleaseNotes>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
 </Project>

@@ -1,0 +1,255 @@
+﻿name: package
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '20'
+  DOTNET_PROJECT: 'CrawfisSoftware.GraphPCG.csproj'
+  UPM_PACKAGE_ID: 'com.example.placeholder'
+  UPM_PACKAGE_DIR: 'Packages/com.example.placeholder'
+
+# This workflow builds and packages the project on versioned releases.
+#
+# What it produces:
+# - A NuGet package (`.nupkg`) and symbols package (`.snupkg`) from `env.DOTNET_PROJECT`.
+# - An optional Unity Package Manager (UPM) tarball (`.tgz`) if the Unity package folder exists.
+# - Optionally publishes the NuGet packages to nuget.org and attaches artifacts to the GitHub Release.
+#
+# GitHub Actions workflow file structure reference:
+# - Workflow syntax (YAML keywords like `on`, `jobs`, `steps`, `if`, `needs`, etc.)
+#   https://docs.github.com/actions/writing-workflows/workflow-syntax-for-github-actions
+# - Contexts and expression syntax (`github.*`, `${{ ... }}`)
+#   https://docs.github.com/actions/learn-github-actions/contexts
+
+
+on:
+  # `on` defines the events that trigger this workflow.
+  # When: Pushes that create or update a tag that starts with `v` (for example `v1.2.3`).
+  # How: GitHub emits the `push` event with `GITHUB_REF_NAME` like `v1.2.3`.
+  push:
+    tags:
+      - 'v*'
+  # When: A GitHub Release is published via the Releases UI or API.
+  # How: GitHub emits the `release` event; `types: [published]` means drafts/edits do not run.
+  release:
+    types:
+      - published
+  # When: Manually triggered from the Actions tab.
+  # How: Runs on demand without requiring a tag or published release.
+  workflow_dispatch: {}
+
+permissions:
+  # `permissions` defines the default token permissions granted to all jobs.
+  # Jobs can override this to grant less/more permission as needed.
+  # These are the default permissions for all jobs unless a job overrides them.
+  # `contents: write` is needed so `action-gh-release` can upload assets.
+  # `id-token: write` is needed for OIDC-based authentication to NuGet (see `NuGet/login@v1`).
+  contents: write
+  id-token: write
+
+jobs:
+  # `jobs` is a map of independent job definitions.
+  # - Each job runs on a fresh runner.
+  # - Job ids (like `build-pack`, `publish-nuget`) are referenced by `needs:` and in the Actions UI.
+  # - Unless `needs:` is used, jobs run in parallel.
+  build-pack:
+    # Job id: `build-pack`
+    # Purpose: Build and package once, then upload artifacts for later jobs.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        # Fetch the repository contents so the build and packaging steps can run.
+        # `fetch-depth: 0` ensures tags and full history are available (important for
+        # versioning that relies on tags/commits and for release asset naming).
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine package version
+        id: version
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-ci.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Print package version
+        shell: bash
+        run: |
+          echo "Packing version: ${{ steps.version.outputs.version }}"
+
+      - name: Setup .NET
+        # Install the .NET SDK used for restore/build/pack.
+        # Although the library targets .NET Standard 2.1, the SDK can be newer.
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        # Restore NuGet dependencies for the project.
+        # This populates the NuGet package cache so subsequent build/pack can be done offline.
+        run: dotnet restore ${{ env.DOTNET_PROJECT }}
+
+      - name: Build
+        # Build the project in Release configuration.
+        # `--no-restore` assumes the prior Restore step succeeded.
+        run: dotnet build ${{ env.DOTNET_PROJECT }} -c Release --no-restore
+
+      - name: Pack NuGet
+        # Create NuGet artifacts (.nupkg and optionally .snupkg) into the `artifacts` folder.
+        # `--no-build` assumes the prior Build step succeeded.
+        run: dotnet pack ${{ env.DOTNET_PROJECT }} -c Release -o artifacts --no-build /p:Version=${{ steps.version.outputs.version }} /p:PackageVersion=${{ steps.version.outputs.version }}
+
+      - name: Upload NuGet artifact
+        # Store generated NuGet artifacts as workflow artifacts so they can be:
+        # - downloaded by other jobs (publish + release attachment)
+        # - retrieved from the workflow run for debugging.
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+
+      - name: Setup Node
+        # Node is not used to build a JS project here; it is included to support
+        # Unity/UPM packaging scenarios where Node tooling may be required.
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Pack UPM tarball
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          # Create a release tarball of the Unity package folder without involving npm/git.
+          #
+          # What: Packages `Packages/com.crawfissoftware.tiling` into a `.tgz`.
+          # When: Only if the folder exists in the repo checkout.
+          # How: `tar -czf` creates a gzip-compressed tarball; the `-C Packages` option
+          #      makes the tarball contain the `com.crawfissoftware.tiling` folder at the top level.
+          #
+          # The output filename uses the git tag version without a leading `v`.
+          # Example: tag `v1.2.3` -> `com.crawfissoftware.tiling-1.2.3.tgz`.
+          if [ -d "${{ env.UPM_PACKAGE_DIR }}" ]; then
+            mkdir -p artifacts/upm
+            tar -czf artifacts/upm/${{ env.UPM_PACKAGE_ID }}-${GITHUB_REF_NAME#v}.tgz -C Packages ${{ env.UPM_PACKAGE_ID }}
+          else
+            echo "Skipping UPM tarball: ${{ env.UPM_PACKAGE_DIR }} not found"
+          fi
+
+      - name: Upload UPM tarball
+        # Upload the UPM tarball if one was created by the previous step.
+        # `hashFiles(...)` returns an empty string if no files match, which makes this step skip.
+        if: ${{ hashFiles(format('artifacts/upm/{0}-*.tgz', env.UPM_PACKAGE_ID)) != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: upm-tarball
+          path: artifacts/upm/${{ env.UPM_PACKAGE_ID }}-*.tgz
+
+      - name: Check packed files
+        run: |
+          echo "Contents of artifacts/"
+          ls -la artifacts/
+
+  publish-nuget:
+    needs: build-pack
+    # Job id: `publish-nuget`
+    # Purpose: Publish the NuGet artifacts produced by `build-pack` to nuget.org.
+    # Note: The job id is just an identifier; it does not imply a built-in GitHub feature.
+    # When: Only runs for tagged pushes or published releases (not `workflow_dispatch`).
+    # How: Downloads the artifact produced by `build-pack`, then pushes to nuget.org.
+    if: github.event_name == 'push' || github.event_name == 'release'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      # This job only needs OIDC permissions for NuGet publishing.
+      # It does not need `contents: write`.
+      id-token: write
+    steps:
+      - name: Download NuGet artifact
+        # Retrieve the packaged `.nupkg`/`.snupkg` produced in `build-pack`.
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+          path: artifacts
+
+      - name: Setup .NET
+        # Install .NET SDK to run `dotnet nuget push`.
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: NuGet login (OIDC ? temp API key)
+        # Authenticate to nuget.org using GitHub OIDC.
+        # This action exchanges the GitHub-issued OIDC token for a short-lived NuGet API key.
+        # The resulting API key is exposed as `steps.login.outputs.NUGET_API_KEY`.
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push NuGet packages
+        # Push the main NuGet packages to nuget.org.
+        # `--skip-duplicate` prevents failures if the version is already present.
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols
+
+      - name: Push NuGet symbols
+        # Push the symbols package(s) to nuget.org for source/symbol debugging.
+        # `--skip-duplicate` prevents failures if the version is already present.
+        if: ${{ hashFiles('artifacts/*.snupkg') != '' }}
+        run: dotnet nuget push "artifacts/*.snupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+  attach-release-assets:
+    needs: build-pack
+    # Job id: `attach-release-assets`
+    # Purpose: Attach the artifacts produced by `build-pack` to the GitHub Release.
+    # When: Only runs for tagged pushes or published releases (not `workflow_dispatch`).
+    # How: Downloads build artifacts, determines the tag to use, and uploads files to the GitHub Release.
+    if: github.event_name == 'push' || github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine tag
+        id: tag
+        shell: bash
+        run: |
+          # What: Resolve the tag name that should be associated with the Release upload.
+          # How:
+          # - For a `release` event, use the release tag name from the payload.
+          # - For a tagged `push` event, use `GITHUB_REF_NAME` (the tag name).
+          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+            echo "tag=${GITHUB_EVENT_RELEASE_TAG_NAME}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download NuGet artifact
+        # Retrieve NuGet artifacts so they can be attached to the GitHub Release.
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+          path: artifacts
+
+      - name: Download UPM tarball
+        # Retrieve the UPM tarball if it exists.
+        # `continue-on-error: true` allows this job to succeed even if the UPM artifact was never uploaded.
+        uses: actions/download-artifact@v4
+        with:
+          name: upm-tarball
+          path: upm
+        continue-on-error: true
+
+      - name: Upload to release
+        # Upload the packaged artifacts as Release assets.
+        # This targets the tag determined above; if a Release for that tag exists, assets are added/updated.
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+            upm/${{ env.UPM_PACKAGE_ID }}-*.tgz
+        env:
+          # GitHub provides this token automatically; it is scoped to the repository.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
